@@ -227,21 +227,21 @@ h1, h2, h3, p { margin-top: 0; }
   isolation: isolate;
 }
 
-/* Wide radial shadow fades out naturally instead of forming a rectangle. */
+/* Compact, soft glow around the text. */
 .hero-copy::before {
   content: "";
   position: absolute;
   z-index: -1;
   pointer-events: none;
-  inset: -5% -5%;
+  inset: -8% -10%;
   background: radial-gradient(
     ellipse at 34% 48%,
-    rgba(14, 7, 27, 0.68) 0%,
-    rgba(14, 7, 27, 0.42) 34%,
-    rgba(14, 7, 27, 0.16) 57%,
-    rgba(14, 7, 27, 0) 76%
+    rgba(14, 7, 27, 0.54) 0%,
+    rgba(14, 7, 27, 0.30) 28%,
+    rgba(14, 7, 27, 0.08) 46%,
+    rgba(14, 7, 27, 0) 62%
   );
-  filter: blur(18px);
+  filter: blur(13px);
 }
 
 .hero .eyebrow {
@@ -296,14 +296,14 @@ h1, h2, h3, p { margin-top: 0; }
   }
 
   .hero-copy::before {
-    inset: -18% -14%;
+    inset: -5% -6%;
     background: radial-gradient(
       ellipse at 50% 45%,
-      rgba(14, 7, 27, 0.66) 0%,
-      rgba(14, 7, 27, 0.38) 43%,
-      rgba(14, 7, 27, 0) 76%
+      rgba(14, 7, 27, 0.50) 0%,
+      rgba(14, 7, 27, 0.27) 30%,
+      rgba(14, 7, 27, 0) 62%
     );
-    filter: blur(15px);
+    filter: blur(11px);
   }
 }
 
