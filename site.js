@@ -1,14 +1,13 @@
 (function () {
   'use strict';
 
-  const config = window.STUDIO_CONFIG || { name: '작은 게임 작업실' };
+  const config = window.STUDIO_CONFIG || { name: '오로라스튜디오' };
   const games = Array.isArray(window.GAMES) ? window.GAMES : [];
   const grid = document.getElementById('game-grid');
 
-  document.title = `${config.name} — Indie Game Studio`;
-  document.querySelectorAll('#brand-name, #footer-brand-name, #footer-studio-name')
-    .forEach((element) => { element.textContent = config.name; });
-  document.getElementById('current-year').textContent = new Date().getFullYear();
+  document.title = `${config.name} | OHRORA STUDIO`;
+  const year = document.getElementById('current-year');
+  if (year) year.textContent = new Date().getFullYear();
 
   function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, (character) => ({
@@ -21,15 +20,14 @@
     const safeUrl = hasLink ? escapeHtml(game.storeUrl.trim()) : '';
     const title = escapeHtml(game.title);
     const image = escapeHtml(game.image);
-    const action = hasLink ? '↗' : '＋';
+    const action = hasLink ? '↗' : '·';
     const coverStart = hasLink
       ? `<a class="game-cover-link" href="${safeUrl}" target="_blank" rel="noopener noreferrer" aria-label="${title} 다운로드 페이지 열기">`
       : `<div class="game-cover-link" aria-label="${title} ${escapeHtml(game.status)}">`;
     const coverEnd = hasLink ? '</a>' : '</div>';
-    const ctaClass = hasLink ? 'game-cta' : 'game-cta muted';
     const cta = hasLink
-      ? `<a class="${ctaClass}" href="${safeUrl}" target="_blank" rel="noopener noreferrer">${escapeHtml(game.linkLabel || '스토어에서 보기')} ↗</a>`
-      : `<span class="${ctaClass}">${escapeHtml(game.linkLabel || game.status)}</span>`;
+      ? `<a class="game-cta" href="${safeUrl}" target="_blank" rel="noopener noreferrer">${escapeHtml(game.linkLabel || '스토어에서 보기')} ↗</a>`
+      : `<span class="game-cta muted">${escapeHtml(game.linkLabel || game.status)}</span>`;
 
     return `
       <article class="game-card">
@@ -56,6 +54,6 @@
   if (grid) {
     grid.innerHTML = games.length
       ? games.map(createCard).join('')
-      : '<p class="loading-message">등록된 게임이 아직 없어요. games.js에 게임을 추가해 주세요.</p>';
+      : '<p class="loading-message">등록된 게임이 아직 없습니다. games.js에 게임을 추가해 주세요.</p>';
   }
 })();
