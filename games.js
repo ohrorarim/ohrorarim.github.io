@@ -25,7 +25,7 @@ window.GAMES = [
   {
     id: "tamapet",
     number: "02",
-    title: "몽삐 · TamaPet",
+    title: "몽삐 ·  Mongppi",
     kicker: "PET · DAILY LIFE",
     description: "나만의 작은 친구를 돌보고 함께 자라나는 포근한 펫 라이프.",
     platform: "IN DEVELOPMENT",
