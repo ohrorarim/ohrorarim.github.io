@@ -148,7 +148,7 @@ h1, h2, h3, p { margin-top: 0; }
 
 /* =========================================================
    메인 히어로 배경 이미지
-   이미지 교체: assets/images/hero-background.jpg
+   이미지 교체: assets/images/MainBackground.jpg
    파일명과 경로를 유지하면 이미지 파일만 교체해도 됩니다.
 ========================================================= */
 .hero {
@@ -175,7 +175,7 @@ h1, h2, h3, p { margin-top: 0; }
   position: absolute;
   inset: 0;
   z-index: -2;
-  background-image: url("assets/images/hero-background.jpg");
+  background-image: url("assets/images/MainBackground.jpg");
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
