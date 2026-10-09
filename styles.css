@@ -175,7 +175,7 @@ h1, h2, h3, p { margin-top: 0; }
   position: absolute;
   inset: 0;
   z-index: -2;
-  background-image: url("assets/images/MainBackgound.jpg");
+  background-image: url("assets/images/MainBackground.jpg");
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
