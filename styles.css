@@ -33,9 +33,9 @@ img { max-width: 100%; }
   border-bottom: 1px solid rgba(50, 37, 78, .08);
   backdrop-filter: blur(14px);
 }
-.brand { display: inline-flex; align-items: center; gap: 12px; min-width: 0; }
-.brand-logo { display: block; width: 38px; height: 38px; object-fit: contain; flex: 0 0 auto; }
-.brand-name { font-family: var(--display); font-size: 15px; font-weight: 800; letter-spacing: -.045em; white-space: nowrap; }
+.brand { display: inline-flex; align-items: center; min-width: 0; flex: 0 1 auto; }
+/* 로고 원본 비율은 유지하고, 레이아웃에 맞춰 최대 크기만 제한합니다. */
+.brand-logo { display: block; width: auto; height: auto; max-width: 160px; max-height: 56px; object-fit: contain; flex: 0 1 auto; }
 .main-nav { display: flex; align-items: center; gap: 34px; margin-left: auto; }
 .main-nav a { color: #565061; font-size: 13px; font-weight: 600; transition: color .2s ease; }
 .main-nav a:hover { color: var(--purple); }
@@ -54,16 +54,9 @@ h1, h2, h3, p { margin-top: 0; }
 .primary-button { display: inline-flex; align-items: center; gap: 28px; padding: 15px 19px; color: var(--white); background: var(--purple); border: 1px solid var(--purple); border-radius: 5px; font-size: 12px; font-weight: 700; transition: transform .2s, background .2s; }
 .primary-button:hover { background: var(--purple-dark); transform: translateY(-2px); }
 .hero-caption { margin: 36px 0 0; color: #9a93a7; font: 700 9px/1.5 var(--display); letter-spacing: .15em; }
-.hero-visual { min-height: 365px; position: relative; display: grid; place-items: center; isolation: isolate; overflow: hidden; border-radius: 14px; background: linear-gradient(145deg, #f7f4ff 0%, #eee7ff 100%); }
-.hero-visual::before, .hero-visual::after { content: ""; position: absolute; z-index: -1; border: 1px solid rgba(116, 80, 217, .14); border-radius: 50%; }
-.hero-visual::before { width: 340px; height: 340px; }
-.hero-visual::after { width: 260px; height: 260px; }
-.hero-orb { position: absolute; border-radius: 50%; background: rgba(116, 80, 217, .1); }
-.orb-one { width: 100px; height: 100px; top: 35px; right: 44px; }
-.orb-two { width: 42px; height: 42px; bottom: 45px; left: 46px; background: rgba(116, 80, 217, .18); }
-.hero-logo-card { width: min(190px, 48%); aspect-ratio: 1; display: grid; place-items: center; padding: 26px; background: rgba(255,255,255,.92); border: 1px solid rgba(255,255,255,.9); border-radius: 24px; box-shadow: 0 20px 60px rgba(70, 45, 135, .12); transform: rotate(-3deg); }
-.hero-logo-card img { width: 100%; height: 100%; object-fit: contain; }
-.visual-caption { position: absolute; right: 24px; bottom: 20px; color: #8c7cb9; font: 800 8px/1.5 var(--display); letter-spacing: .16em; }
+.hero-visual { min-height: 365px; display: grid; place-items: center; overflow: hidden; padding: 28px; border-radius: 10px; background: #faf8ff; }
+/* 정사각형/가로형 로고 모두 원본 비율로 표시하며, 영역 크기만 반응형으로 제한합니다. */
+.hero-logo { display: block; width: auto; height: auto; max-width: min(320px, 100%); max-height: 320px; object-fit: contain; }
 
 .games-section { padding-top: 75px; padding-bottom: 100px; border-top: 1px solid var(--line); }
 .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 28px; margin-bottom: 30px; }
@@ -104,8 +97,7 @@ h1, h2, h3, p { margin-top: 0; }
 .text-link:hover { color: var(--purple); }
 
 .site-footer { min-height: 105px; display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; gap: 20px; }
-.footer-brand .brand-logo { width: 30px; height: 30px; }
-.footer-brand .brand-name { font-size: 13px; }
+.footer-brand .brand-logo { max-width: 120px; max-height: 42px; }
 .site-footer > p { margin: 0; color: #928b9f; text-align: center; font-size: 10px; }
 .copyright { color: #928b9f; text-align: right; font: 500 9px var(--display); }
 
@@ -114,6 +106,7 @@ h1, h2, h3, p { margin-top: 0; }
   .site-header { padding-inline: 22px; }
   .hero { grid-template-columns: 1fr .78fr; gap: 28px; }
   .hero-visual { min-height: 320px; }
+  .hero-logo { max-width: min(280px, 100%); max-height: 280px; }
   .game-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .studio-inner { gap: 42px; }
 }
@@ -121,9 +114,7 @@ h1, h2, h3, p { margin-top: 0; }
   html { scroll-padding-top: 70px; }
   .page-shell { width: calc(100% - 36px); }
   .site-header { height: 68px; padding-inline: 18px; gap: 12px; }
-  .brand { gap: 8px; }
-  .brand-logo { width: 32px; height: 32px; }
-  .brand-name { font-size: 13px; }
+  .brand-logo { max-width: 130px; max-height: 46px; }
   .main-nav { gap: 14px; }
   .main-nav a { font-size: 11px; }
   .header-cta { display: none; }
@@ -132,10 +123,9 @@ h1, h2, h3, p { margin-top: 0; }
   .hero-description { font-size: 12px; }
   .desktop-only { display: none; }
   .hero-caption { margin-top: 27px; font-size: 8px; }
-  .hero-visual { min-height: 275px; }
-  .hero-visual::before { width: 260px; height: 260px; }
-  .hero-visual::after { width: 205px; height: 205px; }
-  .hero-logo-card { width: 145px; padding: 21px; border-radius: 20px; }
+  .hero-visual { min-height: 250px; padding: 18px; }
+  .hero-logo { max-width: min(220px, 100%); max-height: 220px; }
+  .footer-brand .brand-logo { max-width: 100px; max-height: 36px; }
   .games-section { padding-top: 54px; padding-bottom: 64px; }
   .section-heading { align-items: start; flex-direction: column; gap: 12px; margin-bottom: 23px; }
   .section-intro { font-size: 11px; }
