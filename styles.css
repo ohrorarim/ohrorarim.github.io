@@ -196,3 +196,127 @@ h1, h2, h3, p { margin-top: 0; }
   html { scroll-behavior: auto; scroll-snap-type: none; }
   *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
+
+/* =========================================================
+   HERO TEXT: soft local glow instead of a solid panel
+========================================================= */
+.hero {
+  /* Keep the image visible; darken it lightly near the text only. */
+  background-image:
+    linear-gradient(
+      90deg,
+      rgba(19, 11, 33, 0.42) 0%,
+      rgba(19, 11, 33, 0.18) 58%,
+      rgba(19, 11, 33, 0.04) 100%
+    ),
+    url("/assets/images/MainBackground.jpg");
+  background-position: center, center;
+  background-size: cover, cover;
+  background-repeat: no-repeat, no-repeat;
+}
+
+.hero-copy {
+  width: min(760px, 100%);
+  padding: 0;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  isolation: isolate;
+}
+
+/* Wide radial shadow fades out naturally instead of forming a rectangle. */
+.hero-copy::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  inset: -24% -26%;
+  background: radial-gradient(
+    ellipse at 34% 48%,
+    rgba(14, 7, 27, 0.68) 0%,
+    rgba(14, 7, 27, 0.42) 34%,
+    rgba(14, 7, 27, 0.16) 57%,
+    rgba(14, 7, 27, 0) 76%
+  );
+  filter: blur(18px);
+}
+
+.hero .eyebrow {
+  color: #eee7ff;
+  text-shadow: 0 1px 16px rgba(9, 3, 22, 0.72);
+}
+
+.hero .eyebrow-dot {
+  background: #d6c3ff;
+  box-shadow: 0 0 12px rgba(214, 195, 255, 0.55);
+}
+
+.hero h1 {
+  text-shadow:
+    0 2px 8px rgba(8, 3, 20, 0.42),
+    0 0 30px rgba(16, 8, 34, 0.38);
+}
+
+.hero h1 span {
+  color: #e0d1ff;
+  text-shadow:
+    0 0 12px rgba(188, 156, 255, 0.24),
+    0 2px 12px rgba(8, 3, 20, 0.48);
+}
+
+.hero .hero-description {
+  color: rgba(255, 255, 255, 0.94);
+  text-shadow: 0 1px 12px rgba(8, 3, 20, 0.76);
+}
+
+.hero .hero-caption {
+  color: rgba(245, 239, 255, 0.88);
+  text-shadow: 0 1px 10px rgba(8, 3, 20, 0.76);
+}
+
+.hero .primary-button {
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.26),
+    0 0 24px rgba(116, 80, 217, 0.24);
+}
+
+@media (max-width: 600px) {
+  .hero {
+    background-image:
+      linear-gradient(
+        180deg,
+        rgba(19, 11, 33, 0.22) 0%,
+        rgba(19, 11, 33, 0.42) 48%,
+        rgba(19, 11, 33, 0.60) 100%
+      ),
+      url("/assets/images/MainBackground.jpg");
+  }
+
+  .hero-copy::before {
+    inset: -18% -14%;
+    background: radial-gradient(
+      ellipse at 50% 45%,
+      rgba(14, 7, 27, 0.66) 0%,
+      rgba(14, 7, 27, 0.38) 43%,
+      rgba(14, 7, 27, 0) 76%
+    );
+    filter: blur(15px);
+  }
+}
+
+/* Scroll navigation is handled by site.js; don't let CSS snap fight it. */
+html {
+  scroll-behavior: smooth;
+  scroll-snap-type: none !important;
+}
+
+.hero,
+.games-section,
+.studio-section,
+.site-footer {
+  scroll-snap-align: none !important;
+  scroll-snap-stop: normal !important;
+}
