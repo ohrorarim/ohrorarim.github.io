@@ -145,3 +145,145 @@ h1, h2, h3, p { margin-top: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
+
+/* =========================================================
+   메인 히어로 배경 이미지
+   이미지 교체: assets/images/hero-background.jpg
+   파일명과 경로를 유지하면 이미지 파일만 교체해도 됩니다.
+========================================================= */
+.hero {
+  width: 100%;
+  max-width: none;
+  min-height: calc(100vh - 78px);
+  min-height: calc(100svh - 78px);
+  margin: 0;
+  padding: 64px max(32px, calc((100vw - 1160px) / 2)) 84px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  justify-items: start;
+  gap: 0;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: #211432;
+}
+
+/* 화면을 꽉 채우는 배경 이미지 */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background-image: url("assets/images/hero-background.jpg");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+/* 이미지 위 어두운 보라색 오버레이 */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(23, 13, 39, 0.88) 0%,
+    rgba(23, 13, 39, 0.68) 48%,
+    rgba(23, 13, 39, 0.34) 100%
+  );
+}
+
+/* 글씨와 버튼을 담는 반투명 패널 */
+.hero-copy {
+  width: min(760px, 100%);
+  padding: clamp(26px, 4.5vw, 52px);
+  position: relative;
+  z-index: 1;
+  background: rgba(20, 12, 34, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.17);
+  border-radius: 18px;
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.2);
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+}
+
+.hero .eyebrow,
+.hero .hero-description,
+.hero .hero-caption {
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.hero .eyebrow-dot {
+  background: #c8afff;
+}
+
+.hero h1 {
+  color: #ffffff;
+}
+
+.hero h1 span {
+  color: #d6c3ff;
+}
+
+.hero h1 span::after {
+  display: none;
+}
+
+.hero .primary-button {
+  color: #ffffff;
+  background: #8055e8;
+  border-color: #8055e8;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+}
+
+.hero .primary-button:hover {
+  background: #6840c8;
+  border-color: #6840c8;
+}
+
+/* 기존 로고 비주얼 영역은 숨기고 전체 배경을 사용 */
+.hero-visual {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .hero {
+    padding-left: 22px;
+    padding-right: 22px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .hero {
+    min-height: calc(100vh - 68px);
+    min-height: calc(100svh - 68px);
+    padding: 36px 18px 64px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hero-copy {
+    padding: 27px 22px;
+    border-radius: 14px;
+  }
+
+  .hero h1 {
+    font-size: clamp(34px, 9vw, 48px);
+  }
+
+  .hero-description {
+    font-size: 12px;
+  }
+
+  .hero::after {
+    background: linear-gradient(
+      180deg,
+      rgba(23, 13, 39, 0.56) 0%,
+      rgba(23, 13, 39, 0.78) 48%,
+      rgba(23, 13, 39, 0.88) 100%
+    );
+  }
+}
