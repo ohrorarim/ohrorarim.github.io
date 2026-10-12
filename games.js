@@ -13,7 +13,7 @@ window.GAMES = [
   {
     id: "dressup-spin",
     number: "01",
-    title: "작은 옷장 Dressup & Spin",
+    title: "작은 옷장 · Dressup & Spin",
     kicker: "DRESS UP · COLLECTION",
     description: "취향대로 캐릭터를 꾸미고, 작은 옷장 속 새로운 이야기를 발견해 보세요.",
     platform: "ANDROID",
@@ -28,11 +28,11 @@ window.GAMES = [
     title: "몽삐 ·  Mongppi",
     kicker: "PET · DAILY LIFE",
     description: "나만의 작은 친구를 돌보고 함께 자라나는 포근한 펫 라이프.",
-    platform: "IN DEVELOPMENT",
-    status: "개발 중",
+    platform: "ANDROID",
+    status: "출시",
     image: "assets/images/Mongppi.png",
-    storeUrl: "",
-    linkLabel: "출시 준비 중"
+    storeUrl: "https://play.google.com/store/apps/details?id=com.ohrorarim.Mongppi",
+    linkLabel: "Google Play에서 보기"
   },
   {
     id: "tarot",
