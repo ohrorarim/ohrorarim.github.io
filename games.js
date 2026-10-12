@@ -45,5 +45,18 @@ window.GAMES = [
     image: "assets/images/Tarot.png",
     storeUrl: "",
     linkLabel: "출시 준비 중"
+  },
+  
+  {
+    id: "tarot",
+    number: "04",
+    title: "미니 타운",
+    kicker: "TOWN · SANDBOX",
+    description: "생존 게임.",
+    platform: "IN DEVELOPMENT",
+    status: "개발 중",
+    image: "assets/images/MiniTown.png",
+    storeUrl: "",
+    linkLabel: "출시 준비 중"
   }
 ];
