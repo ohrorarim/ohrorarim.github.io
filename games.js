@@ -50,6 +50,18 @@ window.GAMES = [
   {
     id: "tarot",
     number: "04",
+    title: "미니 피아노 · MINI PIANO",
+    kicker: "PIANO · RHYTHM",
+    description: "피아노를 입문하고 리듬게임으로 배워보는 피아노 기초.",
+    platform: "IN DEVELOPMENT",
+    status: "개발 중",
+    image: "assets/images/MiniPiano.png",
+    storeUrl: "",
+    linkLabel: "출시 준비 중"
+  },
+  {
+    id: "tarot",
+    number: "05",
     title: "미니 타운",
     kicker: "TOWN · SANDBOX",
     description: "생존 게임.",
