@@ -285,7 +285,7 @@ h1, h2, h3, p { margin-top: 0; }
   overflow-x: auto;
   overflow-y: hidden;
   perspective: 1120px;
-  scroll-snap-type: x proximity;
+  scroll-snap-type: none;
   scroll-padding-inline: 30px;
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
@@ -315,22 +315,34 @@ h1, h2, h3, p { margin-top: 0; }
   border: 1px solid rgba(116, 80, 217, .13);
   border-radius: 10px;
   box-shadow: 0 12px 34px rgba(63, 41, 119, .055);
-  transform: rotateY(28deg) rotateZ(1.1deg);
+  --card-rotate-y: 28deg;
+  --card-rotate-z: 1.1deg;
+  opacity: 1;
+  transform: rotateY(var(--card-rotate-y)) rotateZ(var(--card-rotate-z));
   transform-origin: center center;
   transform-style: preserve-3d;
   scroll-snap-align: center;
   transition:
-    transform .56s cubic-bezier(.2, .75, .25, 1),
+    opacity .68s ease var(--reveal-delay, 0ms),
+    transform .82s cubic-bezier(.18, .72, .22, 1) var(--reveal-delay, 0ms),
     border-color .35s ease,
     box-shadow .35s ease;
 }
 .game-card:nth-child(even) {
-  transform: rotateY(-28deg) rotateZ(-1.1deg);
+  --card-rotate-y: -28deg;
+  --card-rotate-z: -1.1deg;
+}
+
+/* 스크롤 진입 시 개별 카드만 아래에서 위로 등장합니다. */
+body.project-card-reveal-ready .game-card:not(.is-in-view) {
+  opacity: 0;
+  transform: translate3d(0, 58px, 0) rotateY(var(--card-rotate-y)) rotateZ(var(--card-rotate-z));
 }
 .game-card:hover,
 .game-card:focus-within {
   z-index: 2;
   transform: rotateY(0deg) rotateZ(0deg) translateY(-6px) scale(1.025);
+  transition-delay: 0ms;
   border-color: rgba(116, 80, 217, .34);
   box-shadow: 0 22px 44px rgba(63, 41, 119, .15);
 }
@@ -470,7 +482,7 @@ h1, h2, h3, p { margin-top: 0; }
 
 /* 프로젝트 슬라이더 이동 컨트롤 */
 .project-navigation {
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   gap: 20px;
@@ -517,17 +529,6 @@ h1, h2, h3, p { margin-top: 0; }
   font-variant-numeric: tabular-nums;
 }
 .project-count span { padding-inline: 3px; color: #bbb3ca; }
-
-/* OUR PROJECTS 섹션 전체가 아래에서 위로 자연스럽게 들어옵니다.
-   opacity를 0으로 떨어뜨리지 않아 새로고침처럼 번쩍이는 느낌을 막습니다. */
-@keyframes project-section-rise {
-  from { transform: translate3d(0, 58px, 0); }
-  to { transform: translate3d(0, 0, 0); }
-}
-.games-section.is-rising {
-  animation: project-section-rise 1.18s cubic-bezier(.18,.72,.22,1) both;
-  will-change: transform;
-}
 
 /* 스튜디오 소개 */
 .studio-section { padding: 75px 0; background: var(--purple-pale); border-top: 1px solid #f1edfa; border-bottom: 1px solid #f1edfa; }
@@ -598,7 +599,7 @@ h1, h2, h3, p { margin-top: 0; }
   .project-toolbar { align-items: flex-start; flex-direction: column; gap: 10px; }
   .project-filters { gap: 3px; max-width: 100%; }
   .filter-button { min-height: 34px; padding-inline: 13px; font-size: 11px; }
-  .project-hint { font-size: 10px; text-align: left; }
+  .project-hint { display: none; }
   .game-grid {
     align-items: stretch;
     gap: 12px;
@@ -606,14 +607,13 @@ h1, h2, h3, p { margin-top: 0; }
     scroll-snap-type: x mandatory;
     scroll-padding-inline: 4px;
   }
-  .game-card { flex: 0 0 100%; width: 100%; height: 420px; min-height: 420px; transform: none; border-radius: 12px; }
-  .game-card:nth-child(even) { transform: none; }
+  .game-card { --card-rotate-y: 0deg; --card-rotate-z: 0deg; flex: 0 0 calc(100% - 8px); width: calc(100% - 8px); height: 420px; min-height: 420px; transform: none; border-radius: 12px; }
   .game-card:hover,
   .game-card:focus-within { transform: none; }
   .game-cover { aspect-ratio: 1.28 / 1; }
   .game-info { padding: 15px 15px 14px; }
   .game-description { min-height: 0; margin-bottom: 13px; font-size: 11px; }
-  .project-navigation { gap: 11px; justify-content: space-between; }
+  .project-navigation { display: flex; gap: 11px; justify-content: space-between; }
   .carousel-arrow { min-width: 42px; min-height: 38px; padding-inline: 10px; }
   .carousel-arrow .arrow-word { display: none; }
   .project-pagination { gap: 5px; }
@@ -650,7 +650,7 @@ h1, h2, h3, p { margin-top: 0; }
 
 /* 사용자가 움직임 줄이기를 요청한 경우 애니메이션을 최소화 */
 @media (prefers-reduced-motion: reduce) {
-  .games-section.is-rising { animation: none !important; transform: none !important; }
+  body.project-card-reveal-ready .game-card:not(.is-in-view) { opacity: 1 !important; transform: none !important; }
   *, *::before, *::after {
     scroll-behavior: auto !important;
     transition-duration: .01ms !important;

@@ -72,6 +72,7 @@
   let scrollFrame = 0;
   let wheelTarget = 0;
   let wheelFrame = 0;
+  let projectCardObserver = null;
 
   function currentCards() {
     return grid ? Array.from(grid.querySelectorAll('.game-card')) : [];
@@ -144,8 +145,10 @@
     wheelFrame = 0;
     wheelTarget = grid.scrollLeft;
     const card = cards[activeIndex];
-    const targetLeft = card.offsetLeft - (grid.clientWidth - card.clientWidth) / 2;
-    grid.scrollTo({ left: Math.max(0, targetLeft), behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    const gridRect = grid.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+    const targetLeft = grid.scrollLeft + cardRect.left - gridRect.left - (grid.clientWidth - card.clientWidth) / 2;
+    grid.scrollTo({ left: Math.max(0, Math.min(grid.scrollWidth - grid.clientWidth, targetLeft)), behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     updateNavigation();
   }
 
@@ -177,11 +180,7 @@
       button.setAttribute('aria-pressed', selected ? 'true' : 'false');
     });
     if (hint) {
-      hint.innerHTML = filter === 'app'
-        ? '일상에 도움이 되는 앱 프로젝트 <span aria-hidden="true">↔</span>'
-        : filter === 'game'
-          ? '플레이하며 즐기는 게임 프로젝트 <span aria-hidden="true">↔</span>'
-          : '마우스 휠 또는 트랙패드로 둘러보세요 <span aria-hidden="true">↔</span>';
+      hint.innerHTML = '휠을 움직여 프로젝트 둘러보기 <span aria-hidden="true">↔</span>';
     }
 
     activeIndex = 0;
@@ -189,6 +188,7 @@
     updateNavigation();
     grid.setAttribute('aria-label', filter === 'all' ? '전체 프로젝트 목록' : filter === 'game' ? '게임 프로젝트 목록' : '앱 프로젝트 목록');
     grid.setAttribute('tabindex', '0');
+    setupProjectCardReveal();
   }
 
   filterButtons.forEach((button) => {
@@ -223,43 +223,70 @@
   renderProjects('all');
 
   /*
-   * 카드 영역의 휠은 언제나 카드 목록 안에서만 처리합니다.
-   * 레일 끝에서도 이벤트를 페이지에 전달하지 않아 섹션이 넘어가지 않습니다.
+   * 카드 하나씩 아래에서 자연스럽게 올라오게 합니다.
+   * 한 번 등장한 카드는 다시 스크롤해도 재생/깜빡임이 반복되지 않습니다.
    */
-  let sectionTransitioning = false;
+  function setupProjectCardReveal() {
+    const cards = currentCards();
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    if (projectCardObserver) {
+      projectCardObserver.disconnect();
+      projectCardObserver = null;
+    }
+
+    if (reducedMotion || !('IntersectionObserver' in window)) {
+      document.body.classList.remove('project-card-reveal-ready');
+      cards.forEach((card) => card.classList.add('is-in-view'));
+      return;
+    }
+
+    document.body.classList.add('project-card-reveal-ready');
+    projectCardObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-in-view');
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -3% 0px' });
+
+    cards.forEach((card, index) => {
+      card.style.setProperty('--reveal-delay', `${Math.min(index, 4) * 75}ms`);
+      card.classList.remove('is-in-view');
+      projectCardObserver.observe(card);
+    });
+  }
+
+  /*
+   * 카드 레일의 휠 입력은 언제나 가로 이동으로 처리합니다.
+   * 첫/마지막 카드에서도 세로 페이지 이동으로 넘기지 않습니다.
+   * 카드 크기나 필터가 바뀔 때마다 scrollWidth/clientWidth를 다시 읽습니다.
+   */
   function enableProjectHorizontalWheel() {
     const track = document.getElementById('game-grid');
     if (!track) return;
 
     track.setAttribute('tabindex', '0');
-    track.setAttribute('aria-label', '프로젝트 목록을 좌우로 둘러보세요.');
-
     const getMaxScroll = () => Math.max(0, track.scrollWidth - track.clientWidth);
     const clampScroll = (value) => Math.max(0, Math.min(value, getMaxScroll()));
+
+    function syncTrackMetrics() {
+      const maxScroll = getMaxScroll();
+      track.scrollLeft = Math.max(0, Math.min(track.scrollLeft, maxScroll));
+      wheelTarget = Math.max(0, Math.min(wheelFrame ? wheelTarget : track.scrollLeft, maxScroll));
+      updateNavigation();
+    }
 
     function animateHorizontalScroll() {
       wheelTarget = clampScroll(wheelTarget);
       const difference = wheelTarget - track.scrollLeft;
-      if (Math.abs(difference) <= 0.7) {
+      if (Math.abs(difference) <= 0.8) {
         track.scrollLeft = wheelTarget;
         wheelFrame = 0;
         return;
       }
-
-      // 시간에 따른 감속으로 연속 휠 입력이 하나의 부드러운 이동으로 이어집니다.
-      track.scrollLeft += difference * 0.16;
+      track.scrollLeft += difference * 0.19;
       wheelFrame = requestAnimationFrame(animateHorizontalScroll);
-    }
-
-    function syncTrackMetrics() {
-      const maxScroll = getMaxScroll();
-      if (wheelFrame) {
-        wheelTarget = Math.max(0, Math.min(wheelTarget, maxScroll));
-      } else {
-        wheelTarget = Math.max(0, Math.min(track.scrollLeft, maxScroll));
-      }
-      updateNavigation();
     }
 
     track.addEventListener('scroll', () => {
@@ -268,76 +295,59 @@
 
     track.addEventListener('wheel', (event) => {
       if (event.ctrlKey || event.metaKey) return;
-
-      const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY)
-        ? event.deltaX
-        : event.deltaY;
+      const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
       if (Math.abs(delta) < 1) return;
 
-      // 가장자리에서도 반드시 이벤트를 소비해 페이지 섹션으로 전달되지 않게 합니다.
+      // 가장자리 포함, 모든 카드 영역 휠 입력이 페이지 섹션 이동으로 전파되지 않게 합니다.
       event.preventDefault();
       event.stopPropagation();
-      if (sectionTransitioning) return;
-
       const maxScroll = getMaxScroll();
       if (maxScroll <= 1) {
-        if (wheelFrame) cancelAnimationFrame(wheelFrame);
-        wheelFrame = 0;
         wheelTarget = track.scrollLeft;
         return;
       }
 
       const baseTarget = wheelFrame ? wheelTarget : track.scrollLeft;
-      const nextTarget = clampScroll(baseTarget + delta * 1.55);
-      wheelTarget = nextTarget;
-
-      // 다음 카드가 존재하는 동안은 매 휠 입력을 계속 누적해 좌우로 이동합니다.
-      if (!wheelFrame && Math.abs(wheelTarget - track.scrollLeft) > 0.7) {
+      wheelTarget = clampScroll(baseTarget + delta * 1.35);
+      if (!wheelFrame && Math.abs(wheelTarget - track.scrollLeft) > 0.8) {
         wheelFrame = requestAnimationFrame(animateHorizontalScroll);
       }
     }, { passive: false });
 
-    // 트랙 폭이나 카드 크기가 바뀌면 스크롤 범위를 다시 계산합니다.
+    // 카드 목록 재렌더링/반응형 크기 변경을 모두 감지합니다.
     if ('ResizeObserver' in window) {
       const resizeObserver = new ResizeObserver(syncTrackMetrics);
-      resizeObserver.observe(track);
-      window.addEventListener('resize', syncTrackMetrics, { passive: true });
+      const observedCards = new Set();
+      const observeCurrentCards = () => {
+        const now = new Set(currentCards());
+        observedCards.forEach((card) => {
+          if (!now.has(card)) {
+            resizeObserver.unobserve(card);
+            observedCards.delete(card);
+          }
+        });
+        now.forEach((card) => {
+          if (!observedCards.has(card)) {
+            resizeObserver.observe(card);
+            observedCards.add(card);
+          }
+        });
+        resizeObserver.observe(track);
+        requestAnimationFrame(syncTrackMetrics);
+      };
+      const mutationObserver = new MutationObserver(observeCurrentCards);
+      mutationObserver.observe(track, { childList: true });
+      observeCurrentCards();
     } else {
       window.addEventListener('resize', syncTrackMetrics, { passive: true });
+      requestAnimationFrame(syncTrackMetrics);
     }
   }
 
   /*
-   * OUR PROJECTS 섹션 자체를 한 번에 부드럽게 올립니다.
-   * IntersectionObserver로 실제 진입/이탈만 감지해, 스크롤 이벤트마다
-   * 애니메이션 클래스를 재시작하면서 생기는 깜빡임을 방지합니다.
-   */
-  function enableProjectSectionRise() {
-    const projects = document.getElementById('games');
-    const trigger = document.querySelector('.projects-rise-trigger');
-    if (!projects || !trigger || !('IntersectionObserver' in window)) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-    // 애니메이션 대상인 섹션이 아니라, 앞에 놓인 고정 센티널을 관찰해
-    // translate 애니메이션 자체가 관찰 위치를 바꾸며 깜빡이는 현상을 막습니다.
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          if (!projects.classList.contains('is-rising')) {
-            projects.classList.add('is-rising');
-          }
-        } else {
-          projects.classList.remove('is-rising');
-        }
-      });
-    }, { threshold: 0.01, rootMargin: '0px 0px -7% 0px' });
-
-    observer.observe(trigger);
-  }
-
-  /*
-   * 페이지 바깥 영역의 휠은 섹션 단위로 부드럽게 이동합니다.
-   * 프로젝트 카드 레일은 위의 핸들러가 먼저 처리하므로 여기에 도달하지 않습니다.
+   * 카드 레일 밖에서만 휠 한 번에 인접 섹션으로 이동합니다.
+   * 프로젝트 카드 레일과 페이지 전환의 잠금 상태를 서로 독립시켜
+   * 카드 스크롤이 페이지 스크롤 잠금에 막히지 않게 합니다.
    */
   function enableSectionWheelNavigation() {
     const hero = document.querySelector('.hero');
@@ -345,48 +355,46 @@
     const studio = document.getElementById('studio');
     const header = document.querySelector('.site-header');
     if (!hero || !projects || !studio) return;
-
-    // 터치 화면은 자연스러운 세로 스크롤을 유지하고, 마우스/트랙패드에서 섹션 이동을 적용합니다.
     if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
 
-    let unlockTimer = null;
-
+    let pageTransitioning = false;
+    let unlockTimer = 0;
     const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const headerHeight = () => header ? header.getBoundingClientRect().height : 0;
     const maxPageScroll = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-    const sectionTop = (element) => Math.max(0, Math.min(maxPageScroll(), element.getBoundingClientRect().top + window.scrollY - headerHeight()));
+    const sectionTop = (element) => Math.max(
+      0,
+      Math.min(maxPageScroll(), element.getBoundingClientRect().top + window.scrollY - headerHeight())
+    );
     const getStops = () => [
       { element: hero, top: sectionTop(hero), name: 'hero' },
       { element: projects, top: sectionTop(projects), name: 'projects' },
       { element: studio, top: sectionTop(studio), name: 'studio' }
     ].filter((stop, index, all) => index === 0 || Math.abs(stop.top - all[index - 1].top) > 2);
 
-    function scrollToSection(stop) {
-      if (!stop || sectionTransitioning) return;
-      sectionTransitioning = true;
+    function scrollToSection(stop, force = false) {
+      if (!stop) return;
+      if (pageTransitioning && !force) return;
+      pageTransitioning = true;
       window.clearTimeout(unlockTimer);
-
-      const top = Math.max(0, Math.min(maxPageScroll(), stop.top));
-      window.scrollTo({ top, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
-
-      unlockTimer = window.setTimeout(() => {
-        sectionTransitioning = false;
-      }, prefersReducedMotion() ? 40 : 1120);
+      window.scrollTo({ top: stop.top, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+      unlockTimer = window.setTimeout(() => { pageTransitioning = false; }, prefersReducedMotion() ? 80 : 950);
     }
 
     window.addEventListener('wheel', (event) => {
-      if (event.ctrlKey || event.metaKey || prefersReducedMotion()) return;
-      // 트랙패드의 가로 제스처는 페이지 섹션 이동으로 해석하지 않습니다.
-      if (Math.abs(event.deltaX) > Math.abs(event.deltaY) || Math.abs(event.deltaY) < 5) return;
+      if (event.ctrlKey || event.metaKey || Math.abs(event.deltaY) < 8) return;
+      // 레일 내부 이벤트는 가로 휠 핸들러에 맡깁니다.
+      if (event.target instanceof Element && event.target.closest('.game-grid')) return;
+      // 트랙패드의 좌우 제스처는 세로 섹션 이동이 아닙니다.
+      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
 
-      if (sectionTransitioning) {
+      if (pageTransitioning) {
         event.preventDefault();
         return;
       }
 
       const stops = getStops();
       if (stops.length < 2) return;
-
       let nearestIndex = 0;
       let nearestDistance = Infinity;
       stops.forEach((stop, index) => {
@@ -398,27 +406,25 @@
       });
 
       const nextIndex = event.deltaY > 0 ? nearestIndex + 1 : nearestIndex - 1;
+      // 페이지의 첫/마지막 경계에서는 브라우저 기본 스크롤을 막지 않습니다.
       if (nextIndex < 0 || nextIndex >= stops.length) return;
-
       event.preventDefault();
       scrollToSection(stops[nextIndex]);
-    }, { passive: false });
+    }, { passive: false, capture: true });
 
-    // 메뉴와 CTA도 같은 섹션 이동 및 프로젝트 진입 애니메이션을 사용합니다.
+    // 헤더 링크/CTA는 잠금 중이어도 클릭한 목적지로 이동할 수 있습니다.
     document.querySelectorAll('a[href="#top"], a[href="#games"], a[href="#studio"]').forEach((link) => {
       link.addEventListener('click', (event) => {
         const hash = link.getAttribute('href');
         const target = hash === '#top' ? hero : hash === '#games' ? projects : studio;
         if (!target) return;
         event.preventDefault();
-        const name = target === hero ? 'hero' : target === projects ? 'projects' : 'studio';
-        scrollToSection({ element: target, top: sectionTop(target), name });
+        scrollToSection({ element: target, top: sectionTop(target), name: hash.slice(1) }, true);
         if (window.history && window.history.replaceState) window.history.replaceState(null, '', hash);
       });
     });
   }
 
   enableProjectHorizontalWheel();
-  enableProjectSectionRise();
   enableSectionWheelNavigation();
 })();
