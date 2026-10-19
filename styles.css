@@ -140,6 +140,8 @@ h1, h2, h3, p { margin-top: 0; }
 .hero-logo { display: block; width: auto; height: auto; max-width: min(320px, 100%); max-height: 320px; object-fit: contain; }
 .desktop-only { display: initial; }
 
+.projects-rise-trigger { height: 1px; margin-bottom: -1px; pointer-events: none; }
+
 /* =========================================================
    게임 프로젝트: 풀스크린 가로 갤러리
    SuperTree의 프로젝트 소개 섹션에서 영감을 받은 넓은 배치
@@ -279,12 +281,12 @@ h1, h2, h3, p { margin-top: 0; }
   width: 100%;
   min-width: 0;
   min-height: 0;
-  padding: 26px 22px 30px;
+  padding: 28px 30px 34px;
   overflow-x: auto;
   overflow-y: hidden;
   perspective: 1120px;
   scroll-snap-type: x proximity;
-  scroll-padding-inline: 22px;
+  scroll-padding-inline: 30px;
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -303,7 +305,7 @@ h1, h2, h3, p { margin-top: 0; }
 /* 좁은 카드와 세로로 조금 더 여유 있는 이미지 비율로 시원한 갤러리 구성 */
 .game-card {
   position: relative;
-  flex: 0 0 clamp(250px, 24vw, 320px);
+  flex: 0 0 clamp(270px, 27vw, 360px);
   height: clamp(370px, 50svh, 460px);
   min-width: 0;
   display: flex;
@@ -516,41 +518,15 @@ h1, h2, h3, p { margin-top: 0; }
 }
 .project-count span { padding-inline: 3px; color: #bbb3ca; }
 
-/* 스크롤 진입 시 아래에서 위로 부드럽게 등장 */
-.reveal-up:not(.game-card) {
-  opacity: 0;
-  translate: 0 34px;
-  transition: opacity .72s ease, translate .72s cubic-bezier(.2,.75,.25,1);
-}
-.reveal-up:not(.game-card).is-visible { opacity: 1; translate: 0 0; }
-.game-card.reveal-up {
-  opacity: 0;
-  translate: 0 42px;
-  transition:
-    opacity .72s ease var(--reveal-delay, 0ms),
-    translate .72s cubic-bezier(.2,.75,.25,1) var(--reveal-delay, 0ms),
-    transform .56s cubic-bezier(.2,.75,.25,1),
-    border-color .35s ease,
-    box-shadow .35s ease;
-}
-.game-card.reveal-up.is-visible { opacity: 1; translate: 0 0; }
-
-/* OUR PROJECTS 섹션에 도착하면 콘텐츠 묶음이 아래에서 위로 쓱 올라옵니다. */
+/* OUR PROJECTS 섹션 전체가 아래에서 위로 자연스럽게 들어옵니다.
+   opacity를 0으로 떨어뜨리지 않아 새로고침처럼 번쩍이는 느낌을 막습니다. */
 @keyframes project-section-rise {
-  from { opacity: 0; translate: 0 76px; }
-  to { opacity: 1; translate: 0 0; }
+  from { transform: translate3d(0, 58px, 0); }
+  to { transform: translate3d(0, 0, 0); }
 }
-.games-section.is-rising .section-heading {
-  animation: project-section-rise .88s cubic-bezier(.16,.82,.24,1) both;
-}
-.games-section.is-rising .project-toolbar {
-  animation: project-section-rise .88s cubic-bezier(.16,.82,.24,1) .07s both;
-}
-.games-section.is-rising .game-grid {
-  animation: project-section-rise .92s cubic-bezier(.16,.82,.24,1) .13s both;
-}
-.games-section.is-rising .project-navigation {
-  animation: project-section-rise .84s cubic-bezier(.16,.82,.24,1) .2s both;
+.games-section.is-rising {
+  animation: project-section-rise 1.18s cubic-bezier(.18,.72,.22,1) both;
+  will-change: transform;
 }
 
 /* 스튜디오 소개 */
@@ -674,8 +650,7 @@ h1, h2, h3, p { margin-top: 0; }
 
 /* 사용자가 움직임 줄이기를 요청한 경우 애니메이션을 최소화 */
 @media (prefers-reduced-motion: reduce) {
-  .reveal-up:not(.game-card),
-  .game-card.reveal-up { opacity: 1; translate: none; }
+  .games-section.is-rising { animation: none !important; transform: none !important; }
   *, *::before, *::after {
     scroll-behavior: auto !important;
     transition-duration: .01ms !important;

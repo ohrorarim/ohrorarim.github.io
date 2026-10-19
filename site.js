@@ -35,10 +35,9 @@
 
     const category = game.category === 'app' ? 'app' : 'game';
     const categoryLabel = category === 'app' ? '앱' : '게임';
-    const revealDelay = Math.max(0, (Number(game.number) - 1) % 5) * 90;
 
     return `
-      <article class="game-card reveal-up" data-category="${category}" data-project-id="${escapeHtml(game.id)}" style="--reveal-delay:${revealDelay}ms">
+      <article class="game-card" data-category="${category}" data-project-id="${escapeHtml(game.id)}">
         ${coverStart}
           <img class="game-cover" src="${image}" alt="${title} 대표 이미지" loading="lazy">
           <div class="cover-topline">
@@ -71,30 +70,20 @@
   let activeFilter = 'all';
   let activeIndex = 0;
   let scrollFrame = 0;
-  let revealObserver = null;
+  let wheelTarget = 0;
+  let wheelFrame = 0;
 
   function currentCards() {
     return grid ? Array.from(grid.querySelectorAll('.game-card')) : [];
   }
 
-  function observeRevealElements() {
-    const revealElements = document.querySelectorAll('.reveal-up:not(.is-visible)');
-    if (revealObserver) revealObserver.disconnect();
-
-    if (!('IntersectionObserver' in window)) {
-      document.querySelectorAll('.reveal-up').forEach((element) => element.classList.add('is-visible'));
-      return;
-    }
-
-    revealObserver = new IntersectionObserver((entries, observer) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add('is-visible');
-        observer.unobserve(entry.target);
-      });
-    }, { threshold: 0.12, rootMargin: '0px 0px -4% 0px' });
-
-    revealElements.forEach((element) => revealObserver.observe(element));
+  function resetProjectWheelState() {
+    if (wheelFrame) cancelAnimationFrame(wheelFrame);
+    if (scrollFrame) cancelAnimationFrame(scrollFrame);
+    wheelFrame = 0;
+    scrollFrame = 0;
+    wheelTarget = 0;
+    if (grid) grid.scrollLeft = 0;
   }
 
   function indexNearestToCenter() {
@@ -150,6 +139,10 @@
     const cards = currentCards();
     if (!cards.length || !grid) return;
     activeIndex = Math.max(0, Math.min(index, cards.length - 1));
+    // 화살표/페이지 점프를 누르면 진행 중인 휠 애니메이션과 경합하지 않게 중단합니다.
+    if (wheelFrame) cancelAnimationFrame(wheelFrame);
+    wheelFrame = 0;
+    wheelTarget = grid.scrollLeft;
     const card = cards[activeIndex];
     const targetLeft = card.offsetLeft - (grid.clientWidth - card.clientWidth) / 2;
     grid.scrollTo({ left: Math.max(0, targetLeft), behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
@@ -175,6 +168,8 @@
     grid.innerHTML = filteredGames.length
       ? filteredGames.map(createCard).join('')
       : '<p class="loading-message">이 분류에 등록된 프로젝트가 아직 없어요.</p>';
+    // 필터로 카드 수가 달라지면 이전 가로 스크롤 목표값과 애니메이션을 초기화합니다.
+    resetProjectWheelState();
 
     filterButtons.forEach((button) => {
       const selected = button.dataset.filter === filter;
@@ -190,12 +185,10 @@
     }
 
     activeIndex = 0;
-    grid.scrollLeft = 0;
     buildPagination();
     updateNavigation();
     grid.setAttribute('aria-label', filter === 'all' ? '전체 프로젝트 목록' : filter === 'game' ? '게임 프로젝트 목록' : '앱 프로젝트 목록');
     grid.setAttribute('tabindex', '0');
-    observeRevealElements();
   }
 
   filterButtons.forEach((button) => {
@@ -228,12 +221,10 @@
 
   updateFilterCounts();
   renderProjects('all');
-  observeRevealElements();
 
   /*
-   * 프로젝트 카드 영역의 휠을 부드러운 가로 이동으로 바꿉니다.
-   * 카드 영역 안에서는 세로 휠이 카드 이동에만 사용되고,
-   * 카드 레일의 끝에서는 페이지 섹션 이동으로 자연스럽게 이어집니다.
+   * 카드 영역의 휠은 언제나 카드 목록 안에서만 처리합니다.
+   * 레일 끝에서도 이벤트를 페이지에 전달하지 않아 섹션이 넘어가지 않습니다.
    */
   let sectionTransitioning = false;
 
@@ -244,67 +235,104 @@
     track.setAttribute('tabindex', '0');
     track.setAttribute('aria-label', '프로젝트 목록을 좌우로 둘러보세요.');
 
-    let wheelTarget = track.scrollLeft;
-    let wheelFrame = 0;
-
     const getMaxScroll = () => Math.max(0, track.scrollWidth - track.clientWidth);
     const clampScroll = (value) => Math.max(0, Math.min(value, getMaxScroll()));
 
     function animateHorizontalScroll() {
+      wheelTarget = clampScroll(wheelTarget);
       const difference = wheelTarget - track.scrollLeft;
-      if (Math.abs(difference) <= 0.65) {
+      if (Math.abs(difference) <= 0.7) {
         track.scrollLeft = wheelTarget;
         wheelFrame = 0;
         return;
       }
 
-      // 프레임 단위로 목표 위치에 가까워지게 해 연속 휠 입력도 부드럽게 합칩니다.
-      track.scrollLeft += difference * 0.19;
+      // 시간에 따른 감속으로 연속 휠 입력이 하나의 부드러운 이동으로 이어집니다.
+      track.scrollLeft += difference * 0.16;
       wheelFrame = requestAnimationFrame(animateHorizontalScroll);
     }
 
+    function syncTrackMetrics() {
+      const maxScroll = getMaxScroll();
+      if (wheelFrame) {
+        wheelTarget = Math.max(0, Math.min(wheelTarget, maxScroll));
+      } else {
+        wheelTarget = Math.max(0, Math.min(track.scrollLeft, maxScroll));
+      }
+      updateNavigation();
+    }
+
     track.addEventListener('scroll', () => {
-      // 모바일 스와이프나 스크롤바 드래그가 끝나면 기준 위치를 동기화합니다.
-      if (!wheelFrame) wheelTarget = track.scrollLeft;
+      if (!wheelFrame) wheelTarget = clampScroll(track.scrollLeft);
     }, { passive: true });
 
     track.addEventListener('wheel', (event) => {
       if (event.ctrlKey || event.metaKey) return;
-      if (sectionTransitioning) {
-        event.preventDefault();
-        event.stopPropagation();
-        return;
-      }
 
-      // 세로 휠을 가로 이동으로 사용하되, 트랙패드 가로 제스처도 보존합니다.
       const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY)
         ? event.deltaX
         : event.deltaY;
       if (Math.abs(delta) < 1) return;
 
+      // 가장자리에서도 반드시 이벤트를 소비해 페이지 섹션으로 전달되지 않게 합니다.
+      event.preventDefault();
+      event.stopPropagation();
+      if (sectionTransitioning) return;
+
       const maxScroll = getMaxScroll();
-      if (maxScroll <= 1) return;
-
-      const baseTarget = wheelFrame ? wheelTarget : track.scrollLeft;
-      const movingTowardEdge = wheelFrame && Math.abs(wheelTarget - track.scrollLeft) > 1;
-      const atRequestedEdge = delta < 0 ? baseTarget <= 1 : baseTarget >= maxScroll - 1;
-
-      // 스크롤 애니메이션이 진행 중이면 같은 방향의 관성 입력으로 섹션이 갑자기 넘어가지 않게 합니다.
-      if (atRequestedEdge) {
-        if (movingTowardEdge) {
-          event.preventDefault();
-          event.stopPropagation();
-        }
+      if (maxScroll <= 1) {
+        if (wheelFrame) cancelAnimationFrame(wheelFrame);
+        wheelFrame = 0;
+        wheelTarget = track.scrollLeft;
         return;
       }
 
-      event.preventDefault();
-      event.stopPropagation();
+      const baseTarget = wheelFrame ? wheelTarget : track.scrollLeft;
+      const nextTarget = clampScroll(baseTarget + delta * 1.55);
+      wheelTarget = nextTarget;
 
-      // 일반 휠 한 번에도 지나치게 조금 움직이지 않도록 하고, 여러 입력은 목표점에 누적합니다.
-      wheelTarget = clampScroll(baseTarget + delta * 1.45);
-      if (!wheelFrame) wheelFrame = requestAnimationFrame(animateHorizontalScroll);
+      // 다음 카드가 존재하는 동안은 매 휠 입력을 계속 누적해 좌우로 이동합니다.
+      if (!wheelFrame && Math.abs(wheelTarget - track.scrollLeft) > 0.7) {
+        wheelFrame = requestAnimationFrame(animateHorizontalScroll);
+      }
     }, { passive: false });
+
+    // 트랙 폭이나 카드 크기가 바뀌면 스크롤 범위를 다시 계산합니다.
+    if ('ResizeObserver' in window) {
+      const resizeObserver = new ResizeObserver(syncTrackMetrics);
+      resizeObserver.observe(track);
+      window.addEventListener('resize', syncTrackMetrics, { passive: true });
+    } else {
+      window.addEventListener('resize', syncTrackMetrics, { passive: true });
+    }
+  }
+
+  /*
+   * OUR PROJECTS 섹션 자체를 한 번에 부드럽게 올립니다.
+   * IntersectionObserver로 실제 진입/이탈만 감지해, 스크롤 이벤트마다
+   * 애니메이션 클래스를 재시작하면서 생기는 깜빡임을 방지합니다.
+   */
+  function enableProjectSectionRise() {
+    const projects = document.getElementById('games');
+    const trigger = document.querySelector('.projects-rise-trigger');
+    if (!projects || !trigger || !('IntersectionObserver' in window)) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    // 애니메이션 대상인 섹션이 아니라, 앞에 놓인 고정 센티널을 관찰해
+    // translate 애니메이션 자체가 관찰 위치를 바꾸며 깜빡이는 현상을 막습니다.
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          if (!projects.classList.contains('is-rising')) {
+            projects.classList.add('is-rising');
+          }
+        } else {
+          projects.classList.remove('is-rising');
+        }
+      });
+    }, { threshold: 0.01, rootMargin: '0px 0px -7% 0px' });
+
+    observer.observe(trigger);
   }
 
   /*
@@ -322,8 +350,6 @@
     if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
 
     let unlockTimer = null;
-    let riseTimer = null;
-    let currentDestination = null;
 
     const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const headerHeight = () => header ? header.getBoundingClientRect().height : 0;
@@ -335,35 +361,17 @@
       { element: studio, top: sectionTop(studio), name: 'studio' }
     ].filter((stop, index, all) => index === 0 || Math.abs(stop.top - all[index - 1].top) > 2);
 
-    function playProjectsRise() {
-      if (!projects || prefersReducedMotion()) return;
-      window.clearTimeout(riseTimer);
-      projects.classList.remove('is-rising');
-      // 같은 클래스를 다시 붙여도 CSS 애니메이션이 처음부터 재생되도록 프레임을 확정합니다.
-      void projects.offsetWidth;
-      projects.classList.add('is-rising');
-      riseTimer = window.setTimeout(() => projects.classList.remove('is-rising'), 1150);
-    }
-
     function scrollToSection(stop) {
       if (!stop || sectionTransitioning) return;
       sectionTransitioning = true;
-      currentDestination = stop.name;
       window.clearTimeout(unlockTimer);
-      window.clearTimeout(riseTimer);
 
       const top = Math.max(0, Math.min(maxPageScroll(), stop.top));
       window.scrollTo({ top, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
 
-      // OUR PROJECTS가 화면에 들어올 무렵부터 내용이 아래에서 위로 올라옵니다.
-      if (stop.name === 'projects') {
-        window.setTimeout(playProjectsRise, prefersReducedMotion() ? 0 : 460);
-      }
-
       unlockTimer = window.setTimeout(() => {
         sectionTransitioning = false;
-        currentDestination = null;
-      }, prefersReducedMotion() ? 40 : 980);
+      }, prefersReducedMotion() ? 40 : 1120);
     }
 
     window.addEventListener('wheel', (event) => {
@@ -411,5 +419,6 @@
   }
 
   enableProjectHorizontalWheel();
+  enableProjectSectionRise();
   enableSectionWheelNavigation();
 })();
