@@ -66,7 +66,6 @@
   const counter = document.getElementById('project-count');
   const previousButton = document.querySelector('[data-direction="prev"]');
   const nextButton = document.querySelector('[data-direction="next"]');
-  const hint = document.getElementById('project-hint');
   let activeFilter = 'all';
   let activeIndex = 0;
   let scrollFrame = 0;
@@ -179,9 +178,6 @@
       button.classList.toggle('is-active', selected);
       button.setAttribute('aria-pressed', selected ? 'true' : 'false');
     });
-    if (hint) {
-      hint.innerHTML = '휠을 움직여 프로젝트 둘러보기 <span aria-hidden="true">↔</span>';
-    }
 
     activeIndex = 0;
     buildPagination();
