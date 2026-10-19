@@ -956,33 +956,5 @@ body { color: #f7f8f1; background: var(--near-black); }
   .site-footer { padding-inline: 13px; }
 }
 
-/* =========================================================
-   PROJECT CARD ENTRY — directional movement, no opacity fade
-   Entering from the hero: cards rise from below.
-   Entering from the studio: cards descend from above.
-   All cards start together and the effect repeats on each section re-entry.
-========================================================= */
-.games-section .game-card {
-  opacity: 1 !important;
-  transition:
-    transform 1.05s cubic-bezier(.16, 1, .3, 1),
-    border-color .32s ease,
-    box-shadow .32s ease;
-}
-
-.games-section.cards-enter-from-below .game-card {
-  transform: translate3d(0, calc(100% + 90px), 0) rotateY(var(--card-rotate-y, 0deg)) rotateZ(var(--card-rotate-z, 0deg)) !important;
-}
-
-.games-section.cards-enter-from-above .game-card {
-  transform: translate3d(0, calc(-100% - 90px), 0) rotateY(var(--card-rotate-y, 0deg)) rotateZ(var(--card-rotate-z, 0deg)) !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .games-section.cards-enter-from-below .game-card,
-  .games-section.cards-enter-from-above .game-card {
-    opacity: 1 !important;
-    transform: none !important;
-    transition: none !important;
-  }
-}
+/* 카드 진입 애니메이션은 site.js의 Web Animations API가 담당합니다.
+   카드 opacity는 유지하며, transform의 시작/종료 위치를 직접 애니메이션합니다. */

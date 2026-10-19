@@ -71,10 +71,12 @@
   let scrollFrame = 0;
   let wheelTarget = 0;
   let wheelFrame = 0;
-  let projectSectionObserver = null;
+  let projectSectionRevealInitialized = false;
+  let projectSectionIsActive = false;
+  let projectSectionRevealCheckFrame = 0;
   let lastPageScrollY = window.scrollY;
   let lastPageScrollDirection = 1; // 1: 아래로 이동, -1: 위로 이동
-  let projectSectionInView = false;
+  const projectCardAnimations = new WeakMap();
 
   function currentCards() {
     return grid ? Array.from(grid.querySelectorAll('.game-card')) : [];
@@ -230,53 +232,87 @@
   }, { passive: true });
 
   /*
-   * 다른 섹션에서 프로젝트 섹션으로 들어올 때마다 카드 전체가 동시에 등장합니다.
-   * 위쪽 섹션에서 내려오면 카드가 아래에서 위로 올라오고,
-   * 아래쪽 섹션에서 올라오면 카드가 위에서 아래로 내려옵니다.
-   * 투명도 변화는 사용하지 않고, 레일 밖에서 시작해 위/아래로 이동하는 transform만 사용합니다.
+   * 화면 중앙이 프로젝트 섹션에 들어오는 순간 카드 전체를 동시에 등장시킵니다.
+   * 아래 섹션에서 올라오면 위에서 아래로, 위 섹션에서 내려오면 아래에서 위로 움직입니다.
+   * IntersectionObserver 임계값이나 CSS 클래스 토글에 의존하지 않고 직접 transform을 애니메이션합니다.
    */
   function playProjectCardReveal(direction) {
     const section = document.getElementById('games');
     if (!section) return;
 
-    section.classList.remove('cards-enter-from-below', 'cards-enter-from-above');
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reducedMotion) return;
 
-    const initialClass = direction >= 0 ? 'cards-enter-from-below' : 'cards-enter-from-above';
-    section.classList.add(initialClass);
-    // 시작 위치를 브라우저에 먼저 반영한 다음 다음 프레임부터 기본 위치로 전환합니다.
-    void section.offsetHeight;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => section.classList.remove(initialClass));
+    const cards = Array.from(section.querySelectorAll('.game-card'));
+    if (!cards.length) return;
+
+    const sign = direction >= 0 ? 1 : -1;
+    const duration = 1050;
+
+    // 모든 카드가 같은 이벤트 프레임에서 시작합니다. opacity는 변경하지 않습니다.
+    cards.forEach((card) => {
+      const previousAnimation = projectCardAnimations.get(card);
+      if (previousAnimation) previousAnimation.cancel();
+
+      // 현재 카드의 3D 기울기(또는 hover 상태)를 최종 상태로 유지합니다.
+      const finalTransform = getComputedStyle(card).transform;
+      const travelDistance = Math.ceil(card.getBoundingClientRect().height + 90);
+      const startY = sign > 0 ? travelDistance : -travelDistance;
+      const startTransform = finalTransform === 'none'
+        ? `translate3d(0, ${startY}px, 0)`
+        : `translate3d(0, ${startY}px, 0) ${finalTransform}`;
+
+      const animation = card.animate(
+        [
+          { transform: startTransform },
+          { transform: finalTransform }
+        ],
+        {
+          duration,
+          easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+          fill: 'none'
+        }
+      );
+
+      projectCardAnimations.set(card, animation);
+      animation.onfinish = () => {
+        if (projectCardAnimations.get(card) === animation) {
+          projectCardAnimations.delete(card);
+        }
+      };
     });
   }
 
   function setupProjectCardReveal() {
     const section = document.getElementById('games');
-    if (!section || projectSectionObserver || !('IntersectionObserver' in window)) return;
+    if (!section || projectSectionRevealInitialized) return;
+    projectSectionRevealInitialized = true;
 
-    // 첫 페이지 로딩 때 프로젝트가 화면 가장자리에 걸쳐 보여도 애니메이션을 자동 재생하지 않습니다.
-    // 실제로 화면을 벗어났다가 다른 섹션에서 재진입할 때부터 트리거합니다.
-    const initialRect = section.getBoundingClientRect();
-    const initialVisibleHeight = Math.max(0, Math.min(initialRect.bottom, window.innerHeight) - Math.max(initialRect.top, 0));
-    const initialRatio = initialRect.height > 0 ? initialVisibleHeight / initialRect.height : 0;
-    projectSectionInView = initialRatio >= 0.04;
+    // 화면 중앙이 어느 섹션에 속하는지 기준으로 진입을 판정합니다.
+    // 페이지를 새로 열었을 때 이미 프로젝트 섹션 안이라면, 나갔다 재진입한 뒤부터 재생합니다.
+    const isProjectSectionActive = () => {
+      const rect = section.getBoundingClientRect();
+      const viewportCenter = window.innerHeight * 0.5;
+      return rect.top <= viewportCenter && rect.bottom > viewportCenter;
+    };
+    projectSectionIsActive = isProjectSectionActive();
 
-    projectSectionObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        const entered = entry.isIntersecting && entry.intersectionRatio >= 0.04;
-        if (entered && !projectSectionInView) {
-          projectSectionInView = true;
+    const checkProjectSection = () => {
+      if (projectSectionRevealCheckFrame) return;
+      projectSectionRevealCheckFrame = requestAnimationFrame(() => {
+        projectSectionRevealCheckFrame = 0;
+        const isActiveNow = isProjectSectionActive();
+        if (isActiveNow && !projectSectionIsActive) {
           playProjectCardReveal(lastPageScrollDirection);
-        } else if (!entered && projectSectionInView) {
-          projectSectionInView = false;
-          // 섹션을 완전히 벗어난 뒤 상태를 비워 다음 재진입에서 새로 재생합니다.
-          section.classList.remove('cards-enter-from-below', 'cards-enter-from-above');
         }
+        projectSectionIsActive = isActiveNow;
       });
-    }, { threshold: [0, 0.04] });
+    };
 
-    projectSectionObserver.observe(section);
+    window.addEventListener('scroll', checkProjectSection, { passive: true });
+    window.addEventListener('resize', checkProjectSection, { passive: true });
+    // 해시 링크나 브라우저 스크롤 복원으로 초기 위치가 달라진 경우도 동기화합니다.
+    window.addEventListener('load', checkProjectSection, { once: true });
   }
 
   /*
