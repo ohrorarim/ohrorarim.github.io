@@ -77,3 +77,10 @@ window.GAMES = [
     linkLabel: "출시 준비 중"
   }
 ];
+
+
+/* 웹툰 채널 주소는 여기서 언제든지 변경할 수 있습니다. */
+window.WEBTOON_LINKS = {
+  postype: "https://www.postype.com/@ohrora9403",
+  instagram: "" // 인스타그램 프로필 주소가 정해지면 URL을 입력하세요.
+};

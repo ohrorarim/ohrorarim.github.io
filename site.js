@@ -12,6 +12,42 @@
   const currentYear = document.getElementById('current-year');
   if (currentYear) currentYear.textContent = new Date().getFullYear();
 
+  // 웹툰 채널 주소는 games.js의 WEBTOON_LINKS에서 관리합니다.
+  function setupWebtoonLinks() {
+    const configuredLinks = window.WEBTOON_LINKS || {};
+    document.querySelectorAll('[data-webtoon-link]').forEach((link) => {
+      const key = link.dataset.webtoonLink;
+      const url = typeof configuredLinks[key] === 'string' ? configuredLinks[key].trim() : '';
+      const status = link.querySelector('[data-link-status]');
+
+      if (url) {
+        link.href = url;
+        link.classList.remove('is-unavailable');
+        link.removeAttribute('aria-disabled');
+        link.removeAttribute('tabindex');
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        if (status) status.textContent = key === 'postype' ? '웹툰과 이야기 보러 가기' : '인스타그램에서 보기';
+      } else {
+        link.href = '#';
+        link.classList.add('is-unavailable');
+        link.setAttribute('aria-disabled', 'true');
+        link.setAttribute('tabindex', '-1');
+        link.removeAttribute('target');
+        link.removeAttribute('rel');
+        if (status) status.textContent = key === 'instagram' ? '프로필 주소 준비 중' : '링크 준비 중';
+      }
+    });
+  }
+
+  setupWebtoonLinks();
+  document.addEventListener('click', (event) => {
+    const disabledLink = event.target instanceof Element
+      ? event.target.closest('a[data-webtoon-link][aria-disabled="true"]')
+      : null;
+    if (disabledLink) event.preventDefault();
+  });
+
   function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, (character) => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -218,6 +254,44 @@
         goToProject(activeIndex - 1);
       }
     });
+
+    // 모바일에서는 손가락을 옆으로 밀면 한 장씩 이동합니다.
+    // 가로 터치는 직접 한 카드 단위로 처리하고, 세로 페이지 스크롤은 그대로 둡니다.
+    let touchStart = null;
+    let suppressProjectClickUntil = 0;
+    grid.addEventListener('touchstart', (event) => {
+      if (event.touches.length !== 1) {
+        touchStart = null;
+        return;
+      }
+      const touch = event.touches[0];
+      touchStart = {
+        x: touch.clientX,
+        y: touch.clientY,
+        index: indexNearestToCenter()
+      };
+    }, { passive: true });
+
+    grid.addEventListener('touchend', (event) => {
+      if (!touchStart || !event.changedTouches.length) return;
+      const touch = event.changedTouches[0];
+      const deltaX = touch.clientX - touchStart.x;
+      const deltaY = touch.clientY - touchStart.y;
+      const startIndex = touchStart.index;
+      touchStart = null;
+
+      if (Math.abs(deltaX) < 42 || Math.abs(deltaX) < Math.abs(deltaY) * 1.2) return;
+      suppressProjectClickUntil = performance.now() + 550;
+      goToProject(startIndex + (deltaX < 0 ? 1 : -1));
+    }, { passive: true });
+
+    grid.addEventListener('touchcancel', () => { touchStart = null; }, { passive: true });
+    grid.addEventListener('click', (event) => {
+      if (performance.now() > suppressProjectClickUntil) return;
+      suppressProjectClickUntil = 0;
+      event.preventDefault();
+      event.stopPropagation();
+    }, true);
   }
 
   updateFilterCounts();
@@ -410,9 +484,10 @@
   function enableSectionWheelNavigation() {
     const hero = document.querySelector('.hero');
     const projects = document.getElementById('games');
+    const webtoon = document.getElementById('webtoon');
     const studio = document.getElementById('studio');
     const header = document.querySelector('.site-header');
-    if (!hero || !projects || !studio) return;
+    if (!hero || !projects || !webtoon || !studio) return;
     if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
 
     let pageTransitioning = false;
@@ -427,6 +502,7 @@
     const getStops = () => [
       { element: hero, top: sectionTop(hero), name: 'hero' },
       { element: projects, top: sectionTop(projects), name: 'projects' },
+      { element: webtoon, top: sectionTop(webtoon), name: 'webtoon' },
       { element: studio, top: sectionTop(studio), name: 'studio' }
     ].filter((stop, index, all) => index === 0 || Math.abs(stop.top - all[index - 1].top) > 2);
 
@@ -471,10 +547,11 @@
     }, { passive: false, capture: true });
 
     // 헤더 링크/CTA는 잠금 중이어도 클릭한 목적지로 이동할 수 있습니다.
-    document.querySelectorAll('a[href="#top"], a[href="#games"], a[href="#studio"]').forEach((link) => {
+    document.querySelectorAll('a[href="#top"], a[href="#games"], a[href="#webtoon"], a[href="#studio"]').forEach((link) => {
       link.addEventListener('click', (event) => {
         const hash = link.getAttribute('href');
-        const target = hash === '#top' ? hero : hash === '#games' ? projects : studio;
+        const targets = { '#top': hero, '#games': projects, '#webtoon': webtoon, '#studio': studio };
+        const target = targets[hash];
         if (!target) return;
         event.preventDefault();
         scrollToSection({ element: target, top: sectionTop(target), name: hash.slice(1) }, true);

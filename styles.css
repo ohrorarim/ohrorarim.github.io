@@ -958,3 +958,202 @@ body { color: #f7f8f1; background: var(--near-black); }
 
 /* 카드 진입 애니메이션은 site.js의 Web Animations API가 담당합니다.
    카드 opacity는 유지하며, transform의 시작/종료 위치를 직접 애니메이션합니다. */
+
+
+/* PC에서는 카드마다 좌우 기울기를 번갈아 적용해 리듬감을 줍니다. */
+@media (min-width: 601px) {
+  /* PC: 같은 45도 각도로 기울이고 좌우 방향만 거울처럼 반전합니다. */
+  .games-section .game-grid .game-card {
+    --card-rotate-y: 45deg;
+    --card-rotate-z: 1.25deg;
+  }
+  .games-section .game-grid .game-card:nth-child(even) {
+    --card-rotate-y: -45deg;
+    --card-rotate-z: -1.25deg;
+  }
+}
+
+/* 모바일 가로 스와이프는 site.js에서 한 카드 단위로 처리합니다. */
+@media (max-width: 600px) {
+  .games-section .game-grid {
+    touch-action: pan-y pinch-zoom;
+    scroll-snap-type: x mandatory;
+    scroll-snap-stop: always;
+    overscroll-behavior-x: contain;
+  }
+  .games-section .game-grid .game-card,
+  .games-section .game-grid .game-card:nth-child(even) {
+    --card-rotate-y: 0deg;
+    --card-rotate-z: 0deg;
+    scroll-snap-align: center;
+  }
+}
+
+/* 웹툰 섹션은 게임 갤러리와 분명히 구분되는 어두운 보라색 공간으로 구성합니다. */
+.webtoon-section {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: min(720px, 86svh);
+  display: flex;
+  align-items: center;
+  padding: clamp(68px, 9vw, 112px) 0;
+  color: #f8f5ff;
+  background:
+    radial-gradient(ellipse at 82% 24%, rgba(124, 82, 213, .22), transparent 44%),
+    linear-gradient(135deg, #0a0a08 0%, #15101e 52%, #0a0a08 100%);
+  border-top: 5px solid var(--acid);
+  border-bottom: 5px solid var(--acid);
+}
+.webtoon-inner {
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+  align-items: center;
+  gap: clamp(38px, 7vw, 96px);
+}
+.webtoon-heading .eyebrow {
+  color: #c3a6ff;
+  letter-spacing: .2em;
+}
+.webtoon-heading h2 {
+  margin: 0 0 20px;
+  color: #fff;
+  font-size: clamp(46px, 6.7vw, 86px);
+  line-height: 1;
+  letter-spacing: -.075em;
+  font-weight: 850;
+}
+.webtoon-heading h2 span { color: #c3a6ff; }
+.webtoon-description {
+  max-width: 340px;
+  margin: 0;
+  color: #c7bfd5;
+  font-size: 14px;
+  line-height: 1.9;
+  word-break: keep-all;
+}
+.webtoon-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+.webtoon-link {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 218px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 9px;
+  padding: clamp(20px, 2.2vw, 28px);
+  overflow: hidden;
+  color: #fff;
+  background: linear-gradient(150deg, rgba(195, 166, 255, .12), rgba(255, 255, 255, .025) 56%), #111016;
+  border: 1px solid rgba(195, 166, 255, .4);
+  border-radius: 17px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, .18);
+  transition: border-color .24s ease, background .24s ease, transform .24s ease, box-shadow .24s ease;
+}
+.webtoon-link::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: #8f6be8;
+  transform: scaleX(.22);
+  transform-origin: left center;
+  transition: transform .3s ease;
+}
+.webtoon-link:hover,
+.webtoon-link:focus-visible {
+  transform: translateY(-5px);
+  border-color: #c3a6ff;
+  background: linear-gradient(150deg, rgba(143, 107, 232, .22), rgba(255, 255, 255, .035) 62%), #111016;
+  box-shadow: 0 26px 50px rgba(0, 0, 0, .3);
+}
+.webtoon-link:hover::before,
+.webtoon-link:focus-visible::before { transform: scaleX(1); }
+.webtoon-link:focus-visible { outline: 2px solid #c3a6ff; outline-offset: 4px; }
+.webtoon-link-eyebrow {
+  color: #c3a6ff;
+  font: 800 10px/1.4 var(--display);
+  letter-spacing: .19em;
+}
+.webtoon-link-title {
+  max-width: 100%;
+  color: #fff;
+  font-size: clamp(20px, 2.1vw, 28px);
+  line-height: 1.25;
+  font-weight: 800;
+  letter-spacing: -.04em;
+  overflow-wrap: anywhere;
+}
+.webtoon-link-description {
+  color: #bdb5cc;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.webtoon-link-arrow {
+  position: absolute;
+  top: 20px;
+  right: 22px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  color: #0a0a08;
+  background: #c3a6ff;
+  border-radius: 50%;
+  font-size: 18px;
+  transition: transform .24s ease;
+}
+.webtoon-link:hover .webtoon-link-arrow { transform: translate(2px, -2px); }
+.webtoon-link.is-unavailable {
+  opacity: .62;
+  cursor: default;
+  box-shadow: none;
+}
+.webtoon-link.is-unavailable:hover,
+.webtoon-link.is-unavailable:focus-visible { transform: none; background: linear-gradient(150deg, rgba(195, 166, 255, .08), rgba(255, 255, 255, .02) 56%), #111016; }
+.webtoon-link.is-unavailable::before { transform: scaleX(.22); }
+.webtoon-link.is-unavailable .webtoon-link-arrow { color: #d6c8f3; background: #30283e; }
+
+@media (max-width: 900px) {
+  .webtoon-inner { grid-template-columns: 1fr; gap: 30px; }
+  .webtoon-heading { max-width: 580px; }
+  .webtoon-description { max-width: 480px; }
+  .webtoon-link { min-height: 190px; }
+}
+
+@media (max-width: 600px) {
+  .webtoon-section { min-height: 0; padding: 62px 0 68px; }
+  .webtoon-inner { gap: 29px; }
+  .webtoon-heading h2 { font-size: clamp(48px, 13vw, 66px); }
+  .webtoon-description { font-size: 13px; }
+  .webtoon-links { grid-template-columns: 1fr; gap: 12px; }
+  .webtoon-link { min-height: 150px; padding: 22px; }
+  .webtoon-link-title { font-size: 24px; }
+  .webtoon-link-arrow { top: 18px; right: 18px; }
+}
+
+/* 최종 PC 카드 회전 보정:
+   공통 레일의 perspective는 레일 중앙을 기준으로 카드마다 원근 강도가 달라 보이게 합니다.
+   원근을 각 카드의 transform 안으로 옮겨 모든 카드가 같은 크기·각도로 보이도록 합니다. */
+@media (min-width: 601px) {
+  .games-section .game-grid {
+    perspective: none;
+  }
+
+  .games-section .game-grid .game-card,
+  .games-section .game-grid .game-card:nth-child(even) {
+    transform: perspective(1100px) rotateY(var(--card-rotate-y)) rotateZ(var(--card-rotate-z));
+    transform-origin: center center;
+  }
+
+  /* 마우스를 올리면 기존 동작대로 정면(0도)을 향합니다. */
+  .games-section .game-grid .game-card:hover,
+  .games-section .game-grid .game-card:focus-within {
+    transform: perspective(1100px) rotateY(0deg) rotateZ(0deg) translateY(-6px) scale(1.025);
+  }
+}
