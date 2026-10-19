@@ -71,7 +71,10 @@
   let scrollFrame = 0;
   let wheelTarget = 0;
   let wheelFrame = 0;
-  let projectCardObserver = null;
+  let projectSectionObserver = null;
+  let lastPageScrollY = window.scrollY;
+  let lastPageScrollDirection = 1; // 1: 아래로 이동, -1: 위로 이동
+  let projectSectionInView = false;
 
   function currentCards() {
     return grid ? Array.from(grid.querySelectorAll('.game-card')) : [];
@@ -218,39 +221,62 @@
   updateFilterCounts();
   renderProjects('all');
 
+  // 페이지의 세로 이동 방향을 기억해 프로젝트에 재진입할 때 등장 방향을 정합니다.
+  window.addEventListener('scroll', () => {
+    const currentY = window.scrollY;
+    if (currentY > lastPageScrollY + 1) lastPageScrollDirection = 1;
+    else if (currentY < lastPageScrollY - 1) lastPageScrollDirection = -1;
+    lastPageScrollY = currentY;
+  }, { passive: true });
+
   /*
-   * 카드 하나씩 아래에서 자연스럽게 올라오게 합니다.
-   * 한 번 등장한 카드는 다시 스크롤해도 재생/깜빡임이 반복되지 않습니다.
+   * 다른 섹션에서 프로젝트 섹션으로 들어올 때마다 카드 전체가 동시에 등장합니다.
+   * 위쪽 섹션에서 내려오면 카드가 아래에서 위로 올라오고,
+   * 아래쪽 섹션에서 올라오면 카드가 위에서 아래로 내려옵니다.
+   * 투명도 변화는 사용하지 않고, 레일 밖에서 시작해 위/아래로 이동하는 transform만 사용합니다.
    */
-  function setupProjectCardReveal() {
-    const cards = currentCards();
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function playProjectCardReveal(direction) {
+    const section = document.getElementById('games');
+    if (!section) return;
 
-    if (projectCardObserver) {
-      projectCardObserver.disconnect();
-      projectCardObserver = null;
-    }
+    section.classList.remove('cards-enter-from-below', 'cards-enter-from-above');
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    if (reducedMotion || !('IntersectionObserver' in window)) {
-      document.body.classList.remove('project-card-reveal-ready');
-      cards.forEach((card) => card.classList.add('is-in-view'));
-      return;
-    }
-
-    document.body.classList.add('project-card-reveal-ready');
-    projectCardObserver = new IntersectionObserver((entries, observer) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        entry.target.classList.add('is-in-view');
-        observer.unobserve(entry.target);
-      });
-    }, { threshold: 0.12, rootMargin: '0px 0px -3% 0px' });
-
-    cards.forEach((card, index) => {
-      card.style.setProperty('--reveal-delay', `${Math.min(index, 4) * 75}ms`);
-      card.classList.remove('is-in-view');
-      projectCardObserver.observe(card);
+    const initialClass = direction >= 0 ? 'cards-enter-from-below' : 'cards-enter-from-above';
+    section.classList.add(initialClass);
+    // 시작 위치를 브라우저에 먼저 반영한 다음 다음 프레임부터 기본 위치로 전환합니다.
+    void section.offsetHeight;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => section.classList.remove(initialClass));
     });
+  }
+
+  function setupProjectCardReveal() {
+    const section = document.getElementById('games');
+    if (!section || projectSectionObserver || !('IntersectionObserver' in window)) return;
+
+    // 첫 페이지 로딩 때 프로젝트가 화면 가장자리에 걸쳐 보여도 애니메이션을 자동 재생하지 않습니다.
+    // 실제로 화면을 벗어났다가 다른 섹션에서 재진입할 때부터 트리거합니다.
+    const initialRect = section.getBoundingClientRect();
+    const initialVisibleHeight = Math.max(0, Math.min(initialRect.bottom, window.innerHeight) - Math.max(initialRect.top, 0));
+    const initialRatio = initialRect.height > 0 ? initialVisibleHeight / initialRect.height : 0;
+    projectSectionInView = initialRatio >= 0.04;
+
+    projectSectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const entered = entry.isIntersecting && entry.intersectionRatio >= 0.04;
+        if (entered && !projectSectionInView) {
+          projectSectionInView = true;
+          playProjectCardReveal(lastPageScrollDirection);
+        } else if (!entered && projectSectionInView) {
+          projectSectionInView = false;
+          // 섹션을 완전히 벗어난 뒤 상태를 비워 다음 재진입에서 새로 재생합니다.
+          section.classList.remove('cards-enter-from-below', 'cards-enter-from-above');
+        }
+      });
+    }, { threshold: [0, 0.04] });
+
+    projectSectionObserver.observe(section);
   }
 
   /*
