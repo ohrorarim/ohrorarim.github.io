@@ -150,14 +150,14 @@ h1, h2, h3, p { margin-top: 0; }
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: clamp(22px, 3.5vh, 36px);
+  gap: clamp(16px, 2.7vh, 28px);
 
   width: 100%;
   max-width: none;
   min-height: calc(100vh - 78px);
   min-height: calc(100svh - 78px);
   margin: 0;
-  padding: clamp(30px, 4.5vh, 48px) clamp(24px, 4.5vw, 76px);
+  padding: clamp(34px, 4.5vh, 48px) clamp(24px, 4.5vw, 76px) clamp(26px, 3.2vh, 38px);
   overflow: hidden;
 
   border-top: 1px solid rgba(116, 80, 217, .11);
@@ -211,6 +211,65 @@ h1, h2, h3, p { margin-top: 0; }
   font: 16px/1 var(--display);
 }
 
+.project-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: 100%;
+  flex: 0 0 auto;
+}
+.project-filters {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px;
+  border: 1px solid rgba(116, 80, 217, .12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .76);
+}
+.filter-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 35px;
+  padding: 0 15px;
+  border: 0;
+  border-radius: 999px;
+  color: #746e82;
+  background: transparent;
+  font: 700 11px/1 var(--body);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color .2s ease, background .2s ease, box-shadow .2s ease;
+}
+.filter-button span {
+  color: #a49caf;
+  font: 700 9px/1 var(--display);
+  transition: color .2s ease;
+}
+.filter-button:hover { color: var(--purple-dark); }
+.filter-button.is-active {
+  color: #fff;
+  background: var(--purple);
+  box-shadow: 0 4px 12px rgba(116, 80, 217, .2);
+}
+.filter-button.is-active span { color: rgba(255,255,255,.72); }
+.filter-button:focus-visible,
+.carousel-arrow:focus-visible,
+.pagination-dot:focus-visible {
+  outline: 2px solid #9c7ce9;
+  outline-offset: 3px;
+}
+.project-hint {
+  margin: 0;
+  color: #8d859d;
+  font-size: 10px;
+  line-height: 1.5;
+  text-align: right;
+}
+.project-hint span { margin-left: 7px; color: var(--purple); font-size: 16px; }
+
 /* 가로 프로젝트 레일: 스크롤은 가능하지만 스크롤바는 숨깁니다. */
 .game-grid {
   display: flex;
@@ -244,7 +303,7 @@ h1, h2, h3, p { margin-top: 0; }
 /* 좁은 카드와 세로로 조금 더 여유 있는 이미지 비율로 시원한 갤러리 구성 */
 .game-card {
   position: relative;
-  flex: 0 0 clamp(224px, 19vw, 260px);
+  flex: 0 0 clamp(250px, 24vw, 320px);
   height: clamp(370px, 50svh, 460px);
   min-width: 0;
   display: flex;
@@ -346,11 +405,36 @@ h1, h2, h3, p { margin-top: 0; }
   flex-direction: column;
   padding: 16px 17px 15px;
 }
-.game-kicker {
+.game-meta-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
   margin-bottom: 7px;
+}
+.project-type-tag {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 7px;
+  border-radius: 4px;
+  color: #6040b7;
+  background: #f0eaff;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+}
+.project-type-tag.app { color: #427b75; background: #eaf7f4; }
+.game-kicker {
+  min-width: 0;
+  overflow: hidden;
+  margin: 0;
   color: var(--purple);
   font: 800 8px/1.5 var(--display);
   letter-spacing: .11em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   text-transform: uppercase;
 }
 .game-info h3 {
@@ -382,6 +466,75 @@ h1, h2, h3, p { margin-top: 0; }
 .game-cta.muted { color: #aaa4b6; font-weight: 600; }
 .loading-message { flex: 0 0 100%; padding: 30px 0; color: var(--muted); font-size: 13px; }
 
+/* 프로젝트 슬라이더 이동 컨트롤 */
+.project-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+  flex: 0 0 auto;
+}
+.carousel-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-width: 74px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #e5def4;
+  border-radius: 999px;
+  color: var(--purple-dark);
+  background: rgba(255,255,255,.82);
+  font: 700 11px/1 var(--body);
+  cursor: pointer;
+  transition: border-color .2s ease, background .2s ease, color .2s ease, opacity .2s ease;
+}
+.carousel-arrow > span[aria-hidden="true"] { font: 18px/1 var(--display); }
+.carousel-arrow:hover:not(:disabled) { color: #fff; border-color: var(--purple); background: var(--purple); }
+.carousel-arrow:disabled { opacity: .35; cursor: default; }
+.project-pagination { display: flex; align-items: center; justify-content: center; gap: 7px; }
+.pagination-dot {
+  display: block;
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #d9d1e9;
+  cursor: pointer;
+  transition: width .25s ease, background .25s ease;
+}
+.pagination-dot[aria-current="true"] { width: 23px; background: var(--purple); }
+.project-count {
+  min-width: 52px;
+  color: #655a7b;
+  font: 800 10px/1 var(--display);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.project-count span { padding-inline: 3px; color: #bbb3ca; }
+
+/* 스크롤 진입 시 아래에서 위로 부드럽게 등장 */
+.reveal-up:not(.game-card) {
+  opacity: 0;
+  translate: 0 34px;
+  transition: opacity .72s ease, translate .72s cubic-bezier(.2,.75,.25,1);
+}
+.reveal-up:not(.game-card).is-visible { opacity: 1; translate: 0 0; }
+.game-card.reveal-up {
+  opacity: 0;
+  translate: 0 42px;
+  transition:
+    opacity .72s ease var(--reveal-delay, 0ms),
+    translate .72s cubic-bezier(.2,.75,.25,1) var(--reveal-delay, 0ms),
+    transform .56s cubic-bezier(.2,.75,.25,1),
+    border-color .35s ease,
+    box-shadow .35s ease;
+}
+.game-card.reveal-up.is-visible { opacity: 1; translate: 0 0; }
+
 /* 스튜디오 소개 */
 .studio-section { padding: 75px 0; background: var(--purple-pale); border-top: 1px solid #f1edfa; border-bottom: 1px solid #f1edfa; }
 .studio-inner { display: grid; grid-template-columns: 1fr .85fr; align-items: center; gap: 80px; }
@@ -406,7 +559,7 @@ h1, h2, h3, p { margin-top: 0; }
   .hero-logo { max-width: min(280px, 100%); max-height: 280px; }
   .games-section { padding-inline: 22px; }
   .section-heading h2 { font-size: clamp(32px, 4.5vw, 44px); }
-  .game-card { flex-basis: clamp(220px, 27vw, 250px); height: clamp(380px, 52svh, 450px); }
+  .game-card { flex-basis: clamp(235px, 29vw, 270px); height: clamp(390px, 52svh, 450px); }
   .studio-inner { gap: 42px; }
 }
 
@@ -439,20 +592,41 @@ h1, h2, h3, p { margin-top: 0; }
   .hero-copy::before { inset: -8% -10%; filter: blur(20px); }
   .footer-brand .brand-logo { max-width: 100px; max-height: 36px; }
   .games-section {
-    min-height: calc(100vh - 68px);
-    min-height: calc(100svh - 68px);
-    gap: 20px;
-    padding: 30px 18px 26px;
+    min-height: 0;
+    gap: 17px;
+    padding: 34px 18px 30px;
+    overflow: hidden;
   }
   .section-heading { align-items: start; flex-direction: column; gap: 12px; }
-  .section-heading h2 { font-size: clamp(32px, 8vw, 40px); }
+  .section-heading h2 { font-size: clamp(31px, 8vw, 39px); }
   .section-intro { max-width: none; padding-right: 31px; font-size: 11px; text-align: left; }
   .section-intro::after { bottom: 0; }
-  .game-grid { gap: 15px; padding: 20px 16px 24px; }
-  .game-card { flex-basis: min(70vw, 238px); height: 390px; }
-  .game-cover { aspect-ratio: 1.22 / 1; }
-  .game-info { padding: 14px 14px 13px; }
-  .game-description { min-height: 0; margin-bottom: 13px; }
+  .project-toolbar { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .project-filters { gap: 3px; max-width: 100%; }
+  .filter-button { min-height: 34px; padding-inline: 13px; font-size: 11px; }
+  .project-hint { font-size: 10px; text-align: left; }
+  .game-grid {
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px 4px 14px;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 4px;
+  }
+  .game-card { flex: 0 0 100%; width: 100%; height: 420px; min-height: 420px; transform: none; border-radius: 12px; }
+  .game-card:nth-child(even) { transform: none; }
+  .game-card:hover,
+  .game-card:focus-within { transform: none; }
+  .game-cover { aspect-ratio: 1.28 / 1; }
+  .game-info { padding: 15px 15px 14px; }
+  .game-description { min-height: 0; margin-bottom: 13px; font-size: 11px; }
+  .project-navigation { gap: 11px; justify-content: space-between; }
+  .carousel-arrow { min-width: 42px; min-height: 38px; padding-inline: 10px; }
+  .carousel-arrow .arrow-word { display: none; }
+  .project-pagination { gap: 5px; }
+  .pagination-dot { width: 6px; height: 6px; }
+  .pagination-dot[aria-current="true"] { width: 19px; }
+  .project-count { min-width: 43px; font-size: 9px; }
+  .project-navigation .project-count { margin-inline: 2px; }
   .studio-section { padding: 55px 0; }
   .studio-inner { grid-template-columns: 1fr; gap: 25px; }
   .studio-heading h2 { font-size: 29px; }
@@ -464,13 +638,26 @@ h1, h2, h3, p { margin-top: 0; }
 
 /* 터치 기기에서도 카드 기울기와 가로 스와이프를 유지 */
 @media (hover: none) {
-  .game-card { transform: rotateY(18deg); }
-  .game-card:nth-child(even) { transform: rotateY(-18deg); }
-  .game-card:active { transform: rotateY(0deg) translateY(-2px); }
+  .game-card:hover .game-cover,
+  .game-card:focus-within .game-cover { transform: none; }
+}
+
+@media (max-width: 380px) {
+  .site-header { padding-inline: 13px; }
+  .brand-logo { max-width: 112px; }
+  .main-nav { gap: 10px; }
+  .main-nav a { font-size: 10px; }
+  .games-section { padding-inline: 13px; }
+  .game-card { height: 410px; min-height: 410px; }
+  .game-info h3 { font-size: 15px; }
+  .project-filters { width: 100%; justify-content: space-between; }
+  .filter-button { gap: 5px; padding-inline: 10px; }
 }
 
 /* 사용자가 움직임 줄이기를 요청한 경우 애니메이션을 최소화 */
 @media (prefers-reduced-motion: reduce) {
+  .reveal-up:not(.game-card),
+  .game-card.reveal-up { opacity: 1; translate: none; }
   *, *::before, *::after {
     scroll-behavior: auto !important;
     transition-duration: .01ms !important;

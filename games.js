@@ -1,17 +1,18 @@
 /*
- * 게임 목록 관리 파일입니다.
+ * 게임·앱 프로젝트 목록 관리 파일입니다.
  * 새 게임을 추가할 때는 아래 목록에 항목 하나를 복사해 수정하면 됩니다.
  * 이미지 경로는 assets/images/ 폴더 기준입니다.
  * 출시 전 게임은 storeUrl을 빈 문자열("")로 두세요.
  */
 window.STUDIO_CONFIG = {
   name: "오로라스튜디오",
-  description: "작은 게임, 오래 남는 즐거움."
+  description: "작은 게임과 앱, 오래 남는 즐거움."
 };
 
 window.GAMES = [
   {
     id: "dressup-spin",
+    category: "game",
     number: "01",
     title: "작은 옷장 · Dressup & Spin",
     kicker: "DRESS UP · COLLECTION",
@@ -24,6 +25,7 @@ window.GAMES = [
   },
   {
     id: "tamapet",
+    category: "game",
     number: "02",
     title: "몽삐 ·  Mongppi",
     kicker: "PET · DAILY LIFE",
@@ -36,6 +38,7 @@ window.GAMES = [
   },
   {
     id: "tarot",
+    category: "app",
     number: "03",
     title: "타로",
     kicker: "TAROT · REFLECTION",
@@ -48,7 +51,8 @@ window.GAMES = [
   },
   
   {
-    id: "tarot",
+    id: "mini-piano",
+    category: "app",
     number: "04",
     title: "미니 피아노 · MINI PIANO",
     kicker: "PIANO · RHYTHM",
@@ -60,7 +64,8 @@ window.GAMES = [
     linkLabel: "출시 준비 중"
   },
   {
-    id: "tarot",
+    id: "mini-town",
+    category: "game",
     number: "05",
     title: "미니 타운",
     kicker: "TOWN · SANDBOX",

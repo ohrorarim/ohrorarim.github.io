@@ -33,8 +33,12 @@
       ? `<a class="${ctaClass}" href="${safeUrl}" target="_blank" rel="noopener noreferrer">${escapeHtml(game.linkLabel || '스토어에서 보기')} ↗</a>`
       : `<span class="${ctaClass}">${escapeHtml(game.linkLabel || game.status)}</span>`;
 
+    const category = game.category === 'app' ? 'app' : 'game';
+    const categoryLabel = category === 'app' ? '앱' : '게임';
+    const revealDelay = Math.max(0, (Number(game.number) - 1) % 5) * 90;
+
     return `
-      <article class="game-card">
+      <article class="game-card reveal-up" data-category="${category}" data-project-id="${escapeHtml(game.id)}" style="--reveal-delay:${revealDelay}ms">
         ${coverStart}
           <img class="game-cover" src="${image}" alt="${title} 대표 이미지" loading="lazy">
           <div class="cover-topline">
@@ -44,7 +48,10 @@
           <span class="cover-action" aria-hidden="true">${action}</span>
         ${coverEnd}
         <div class="game-info">
-          <p class="game-kicker">${escapeHtml(game.kicker)}</p>
+          <div class="game-meta-line">
+            <span class="project-type-tag ${category}">${categoryLabel}</span>
+            <p class="game-kicker">${escapeHtml(game.kicker)}</p>
+          </div>
           <h3>${title}</h3>
           <p class="game-description">${escapeHtml(game.description)}</p>
           <div class="game-footer">
@@ -55,11 +62,173 @@
       </article>`;
   }
 
-  if (grid) {
-    grid.innerHTML = games.length
-      ? games.map(createCard).join('')
-      : '<p class="loading-message">등록된 게임이 아직 없어요. games.js에 게임을 추가해 주세요.</p>';
+  const filterButtons = Array.from(document.querySelectorAll('[data-filter]'));
+  const pagination = document.getElementById('project-pagination');
+  const counter = document.getElementById('project-count');
+  const previousButton = document.querySelector('[data-direction="prev"]');
+  const nextButton = document.querySelector('[data-direction="next"]');
+  const hint = document.getElementById('project-hint');
+  let activeFilter = 'all';
+  let activeIndex = 0;
+  let scrollFrame = 0;
+  let revealObserver = null;
+
+  function currentCards() {
+    return grid ? Array.from(grid.querySelectorAll('.game-card')) : [];
   }
+
+  function observeRevealElements() {
+    const revealElements = document.querySelectorAll('.reveal-up:not(.is-visible)');
+    if (revealObserver) revealObserver.disconnect();
+
+    if (!('IntersectionObserver' in window)) {
+      document.querySelectorAll('.reveal-up').forEach((element) => element.classList.add('is-visible'));
+      return;
+    }
+
+    revealObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -4% 0px' });
+
+    revealElements.forEach((element) => revealObserver.observe(element));
+  }
+
+  function indexNearestToCenter() {
+    const cards = currentCards();
+    if (!cards.length || !grid) return 0;
+    const trackCenter = grid.getBoundingClientRect().left + grid.clientWidth / 2;
+    let nearestIndex = 0;
+    let nearestDistance = Infinity;
+    cards.forEach((card, index) => {
+      const rect = card.getBoundingClientRect();
+      const distance = Math.abs((rect.left + rect.width / 2) - trackCenter);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestIndex = index;
+      }
+    });
+    return nearestIndex;
+  }
+
+  function updateNavigation() {
+    const cards = currentCards();
+    const count = cards.length;
+    activeIndex = count ? Math.min(Math.max(activeIndex, 0), count - 1) : 0;
+
+    if (counter) {
+      const current = String(count ? activeIndex + 1 : 0).padStart(2, '0');
+      const total = String(count).padStart(2, '0');
+      counter.innerHTML = `${current} <span>/</span> ${total}`;
+    }
+    if (previousButton) previousButton.disabled = count < 2 || activeIndex === 0;
+    if (nextButton) nextButton.disabled = count < 2 || activeIndex >= count - 1;
+    if (pagination) {
+      Array.from(pagination.children).forEach((button, index) => {
+        const isCurrent = index === activeIndex;
+        button.setAttribute('aria-current', isCurrent ? 'true' : 'false');
+        button.setAttribute('aria-label', `프로젝트 ${index + 1}: ${cards[index]?.querySelector('h3')?.textContent || ''}`);
+      });
+    }
+  }
+
+  function buildPagination() {
+    if (!pagination) return;
+    const cards = currentCards();
+    pagination.innerHTML = cards.map((card, index) => `
+      <button class="pagination-dot" type="button" data-page="${index}" aria-current="${index === activeIndex ? 'true' : 'false'}" aria-label="프로젝트 ${index + 1}: ${escapeHtml(card.querySelector('h3')?.textContent || '')}"></button>
+    `).join('');
+    pagination.querySelectorAll('[data-page]').forEach((button) => {
+      button.addEventListener('click', () => goToProject(Number(button.dataset.page)));
+    });
+  }
+
+  function goToProject(index) {
+    const cards = currentCards();
+    if (!cards.length || !grid) return;
+    activeIndex = Math.max(0, Math.min(index, cards.length - 1));
+    const card = cards[activeIndex];
+    const targetLeft = card.offsetLeft - (grid.clientWidth - card.clientWidth) / 2;
+    grid.scrollTo({ left: Math.max(0, targetLeft), behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    updateNavigation();
+  }
+
+  function updateFilterCounts() {
+    const counts = {
+      all: games.length,
+      game: games.filter((game) => (game.category || 'game') === 'game').length,
+      app: games.filter((game) => game.category === 'app').length
+    };
+    document.querySelectorAll('[data-filter-count]').forEach((element) => {
+      const count = counts[element.dataset.filterCount] || 0;
+      element.textContent = String(count).padStart(2, '0');
+    });
+  }
+
+  function renderProjects(filter = activeFilter) {
+    if (!grid) return;
+    activeFilter = filter;
+    const filteredGames = games.filter((game) => filter === 'all' || (game.category || 'game') === filter);
+    grid.innerHTML = filteredGames.length
+      ? filteredGames.map(createCard).join('')
+      : '<p class="loading-message">이 분류에 등록된 프로젝트가 아직 없어요.</p>';
+
+    filterButtons.forEach((button) => {
+      const selected = button.dataset.filter === filter;
+      button.classList.toggle('is-active', selected);
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    });
+    if (hint) {
+      hint.innerHTML = filter === 'app'
+        ? '일상에 도움이 되는 앱 프로젝트 <span aria-hidden="true">↔</span>'
+        : filter === 'game'
+          ? '플레이하며 즐기는 게임 프로젝트 <span aria-hidden="true">↔</span>'
+          : '마우스 휠 또는 트랙패드로 둘러보세요 <span aria-hidden="true">↔</span>';
+    }
+
+    activeIndex = 0;
+    grid.scrollLeft = 0;
+    buildPagination();
+    updateNavigation();
+    grid.setAttribute('aria-label', filter === 'all' ? '전체 프로젝트 목록' : filter === 'game' ? '게임 프로젝트 목록' : '앱 프로젝트 목록');
+    grid.setAttribute('tabindex', '0');
+    observeRevealElements();
+  }
+
+  filterButtons.forEach((button) => {
+    button.addEventListener('click', () => renderProjects(button.dataset.filter));
+  });
+
+  if (previousButton) previousButton.addEventListener('click', () => goToProject(activeIndex - 1));
+  if (nextButton) nextButton.addEventListener('click', () => goToProject(activeIndex + 1));
+
+  if (grid) {
+    grid.addEventListener('scroll', () => {
+      if (scrollFrame) cancelAnimationFrame(scrollFrame);
+      scrollFrame = requestAnimationFrame(() => {
+        activeIndex = indexNearestToCenter();
+        updateNavigation();
+      });
+    }, { passive: true });
+
+    grid.addEventListener('keydown', (event) => {
+      if (event.target !== grid) return;
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        goToProject(activeIndex + 1);
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        goToProject(activeIndex - 1);
+      }
+    });
+  }
+
+  updateFilterCounts();
+  renderProjects('all');
+  observeRevealElements();
 
   /*
    * 게임 프로젝트 가로 휠
@@ -74,7 +243,7 @@
 
     // 키보드 사용자가 탭 이동 후 방향키로 목록을 탐색할 수 있게 합니다.
     track.setAttribute('tabindex', '0');
-    track.setAttribute('aria-label', '게임 프로젝트를 좌우로 둘러보세요.');
+    track.setAttribute('aria-label', '프로젝트 목록을 좌우로 둘러보세요.');
 
     section.addEventListener('wheel', (event) => {
       // 브라우저 확대/축소 제스처는 가로 이동으로 바꾸지 않습니다.
@@ -114,6 +283,7 @@
     const gamesSection = document.getElementById('games');
     const header = document.querySelector('.site-header');
     if (!hero || !gamesSection) return;
+    if (window.matchMedia('(max-width: 900px)').matches) return;
 
     let isAnimating = false;
     let animationTimer = null;

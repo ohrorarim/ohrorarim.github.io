@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#ffffff">
-  <meta name="description" content="오로라스튜디오 — 작지만 오래 기억에 남는 모바일 게임을 만듭니다.">
+  <meta name="description" content="오로라스튜디오 — 작지만 오래 기억에 남는 모바일 게임과 앱을 만듭니다.">
   <title>오로라스튜디오 | OHRORA STUDIO</title>
   <link rel="icon" href="assets/images/logo.png" type="image/png">
   <link rel="stylesheet" href="styles.css">
@@ -17,11 +17,11 @@
       <img class="brand-logo" src="assets/images/logo.png" alt="오로라스튜디오 로고">
     </a>
     <nav class="main-nav" aria-label="메인 메뉴">
-      <a href="#games">게임</a>
+      <a href="#games">프로젝트</a>
       <a href="#studio">스튜디오</a>
     </nav>
 
-    <a class="header-cta" href="#games">게임 둘러보기 <span aria-hidden="true">↗</span></a>
+    <a class="header-cta" href="#games">프로젝트 둘러보기 <span aria-hidden="true">↗</span></a>
   </header>
 
   <main id="top">
@@ -29,8 +29,8 @@
       <div class="hero-copy">
         <p class="eyebrow"><span class="eyebrow-dot"></span> OHRORA STUDIO · INDIE GAME DEVELOPER</p>
         <h1 id="hero-title">작은 즐거움이<br><span>머무는 게임</span>을 만듭니다.</h1>
-        <p class="hero-description">캐릭터를 꾸미고, 카드를 펼치고, 나만의 친구를 돌보는 시간.<br class="desktop-only"> 일상에 자연스럽게 스며드는 작은 세계를 만들어요.</p>
-        <a class="primary-button" href="#games">게임 살펴보기 <span aria-hidden="true">↓</span></a>
+        <p class="hero-description">캐릭터를 꾸미고, 카드를 펼치고, 나만의 친구를 돌보는 시간.<br class="desktop-only"> 일상에 자연스럽게 스며드는 게임과 앱으로 작은 세계를 만들어요.</p>
+        <a class="primary-button" href="#games">프로젝트 살펴보기 <span aria-hidden="true">↓</span></a>
         <p class="hero-caption">SMALL GAMES, MEANINGFUL MOMENTS.</p>
       </div>
       <div class="hero-visual" aria-label="오로라스튜디오 로고">
@@ -39,16 +39,32 @@
     </section>
 
     <section class="games-section page-shell" id="games" aria-labelledby="games-title">
-      <div class="section-heading">
+      <div class="section-heading reveal-up">
         <div>
           <p class="eyebrow">OUR PROJECTS</p>
-          <h2 id="games-title">게임 <span>프로젝트</span></h2>
+          <h2 id="games-title">게임과 앱, <span>작은 세계</span></h2>
         </div>
-        <p class="section-intro">각 게임의 특징을 살펴보고 새로운 프로젝트를 만나보세요.<br>마우스 휠 또는 트랙패드로 좌우로 둘러보세요.</p>
+        <p class="section-intro">게임부터 일상 속 앱까지, 오로라스튜디오의 프로젝트를 만나보세요.<br>모바일에서는 한 장씩 좌우로 넘겨볼 수 있어요.</p>
       </div>
 
-      <div class="game-grid" id="game-grid" aria-live="polite">
-        <p class="loading-message">게임 목록을 불러오는 중입니다…</p>
+      <div class="project-toolbar reveal-up">
+        <div class="project-filters" role="group" aria-label="프로젝트 종류 필터">
+          <button class="filter-button is-active" type="button" data-filter="all" aria-pressed="true">전체 <span data-filter-count="all">05</span></button>
+          <button class="filter-button" type="button" data-filter="game" aria-pressed="false">게임 <span data-filter-count="game">03</span></button>
+          <button class="filter-button" type="button" data-filter="app" aria-pressed="false">앱 <span data-filter-count="app">02</span></button>
+        </div>
+        <p class="project-hint" id="project-hint">마우스 휠 또는 트랙패드로 둘러보세요 <span aria-hidden="true">↔</span></p>
+      </div>
+
+      <div class="game-grid" id="game-grid" aria-label="프로젝트 목록" aria-live="polite">
+        <p class="loading-message">프로젝트 목록을 불러오는 중입니다…</p>
+      </div>
+
+      <div class="project-navigation reveal-up" aria-label="프로젝트 탐색">
+        <button class="carousel-arrow" type="button" data-direction="prev" aria-label="이전 프로젝트" disabled><span aria-hidden="true">←</span><span class="arrow-word">이전</span></button>
+        <div class="project-pagination" id="project-pagination" aria-label="프로젝트 페이지 선택"></div>
+        <span class="project-count" id="project-count" aria-live="polite">01 <span>/</span> 05</span>
+        <button class="carousel-arrow" type="button" data-direction="next" aria-label="다음 프로젝트"><span class="arrow-word">다음</span><span aria-hidden="true">→</span></button>
       </div>
     </section>
 
