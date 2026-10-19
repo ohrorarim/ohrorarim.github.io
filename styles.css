@@ -282,7 +282,7 @@ h1, h2, h3, p { margin-top: 0; }
   padding: 26px 22px 30px;
   overflow-x: auto;
   overflow-y: hidden;
-  perspective: 1350px;
+  perspective: 1120px;
   scroll-snap-type: x proximity;
   scroll-padding-inline: 22px;
   overscroll-behavior-x: contain;
@@ -313,7 +313,7 @@ h1, h2, h3, p { margin-top: 0; }
   border: 1px solid rgba(116, 80, 217, .13);
   border-radius: 10px;
   box-shadow: 0 12px 34px rgba(63, 41, 119, .055);
-  transform: rotateY(18deg);
+  transform: rotateY(28deg) rotateZ(1.1deg);
   transform-origin: center center;
   transform-style: preserve-3d;
   scroll-snap-align: center;
@@ -323,12 +323,12 @@ h1, h2, h3, p { margin-top: 0; }
     box-shadow .35s ease;
 }
 .game-card:nth-child(even) {
-  transform: rotateY(-18deg);
+  transform: rotateY(-28deg) rotateZ(-1.1deg);
 }
 .game-card:hover,
 .game-card:focus-within {
   z-index: 2;
-  transform: rotateY(0deg) translateY(-5px) scale(1.025);
+  transform: rotateY(0deg) rotateZ(0deg) translateY(-6px) scale(1.025);
   border-color: rgba(116, 80, 217, .34);
   box-shadow: 0 22px 44px rgba(63, 41, 119, .15);
 }
@@ -534,6 +534,24 @@ h1, h2, h3, p { margin-top: 0; }
     box-shadow .35s ease;
 }
 .game-card.reveal-up.is-visible { opacity: 1; translate: 0 0; }
+
+/* OUR PROJECTS 섹션에 도착하면 콘텐츠 묶음이 아래에서 위로 쓱 올라옵니다. */
+@keyframes project-section-rise {
+  from { opacity: 0; translate: 0 76px; }
+  to { opacity: 1; translate: 0 0; }
+}
+.games-section.is-rising .section-heading {
+  animation: project-section-rise .88s cubic-bezier(.16,.82,.24,1) both;
+}
+.games-section.is-rising .project-toolbar {
+  animation: project-section-rise .88s cubic-bezier(.16,.82,.24,1) .07s both;
+}
+.games-section.is-rising .game-grid {
+  animation: project-section-rise .92s cubic-bezier(.16,.82,.24,1) .13s both;
+}
+.games-section.is-rising .project-navigation {
+  animation: project-section-rise .84s cubic-bezier(.16,.82,.24,1) .2s both;
+}
 
 /* 스튜디오 소개 */
 .studio-section { padding: 75px 0; background: var(--purple-pale); border-top: 1px solid #f1edfa; border-bottom: 1px solid #f1edfa; }

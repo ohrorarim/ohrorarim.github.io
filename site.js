@@ -231,113 +231,185 @@
   observeRevealElements();
 
   /*
-   * 게임 프로젝트 가로 휠
-   * - 게임 섹션 위에서 세로 마우스 휠을 좌우 이동으로 전환합니다.
-   * - 트랙패드의 가로 스크롤도 그대로 지원합니다.
-   * - 콘텐츠 끝에서는 기본 페이지 스크롤을 허용합니다.
+   * 프로젝트 카드 영역의 휠을 부드러운 가로 이동으로 바꿉니다.
+   * 카드 영역 안에서는 세로 휠이 카드 이동에만 사용되고,
+   * 카드 레일의 끝에서는 페이지 섹션 이동으로 자연스럽게 이어집니다.
    */
-  function enableProjectHorizontalWheel() {
-    const section = document.getElementById('games');
-    const track = document.getElementById('game-grid');
-    if (!section || !track) return;
+  let sectionTransitioning = false;
 
-    // 키보드 사용자가 탭 이동 후 방향키로 목록을 탐색할 수 있게 합니다.
+  function enableProjectHorizontalWheel() {
+    const track = document.getElementById('game-grid');
+    if (!track) return;
+
     track.setAttribute('tabindex', '0');
     track.setAttribute('aria-label', '프로젝트 목록을 좌우로 둘러보세요.');
 
-    section.addEventListener('wheel', (event) => {
-      // 브라우저 확대/축소 제스처는 가로 이동으로 바꾸지 않습니다.
-      if (event.ctrlKey || event.metaKey) return;
+    let wheelTarget = track.scrollLeft;
+    let wheelFrame = 0;
 
+    const getMaxScroll = () => Math.max(0, track.scrollWidth - track.clientWidth);
+    const clampScroll = (value) => Math.max(0, Math.min(value, getMaxScroll()));
+
+    function animateHorizontalScroll() {
+      const difference = wheelTarget - track.scrollLeft;
+      if (Math.abs(difference) <= 0.65) {
+        track.scrollLeft = wheelTarget;
+        wheelFrame = 0;
+        return;
+      }
+
+      // 프레임 단위로 목표 위치에 가까워지게 해 연속 휠 입력도 부드럽게 합칩니다.
+      track.scrollLeft += difference * 0.19;
+      wheelFrame = requestAnimationFrame(animateHorizontalScroll);
+    }
+
+    track.addEventListener('scroll', () => {
+      // 모바일 스와이프나 스크롤바 드래그가 끝나면 기준 위치를 동기화합니다.
+      if (!wheelFrame) wheelTarget = track.scrollLeft;
+    }, { passive: true });
+
+    track.addEventListener('wheel', (event) => {
+      if (event.ctrlKey || event.metaKey) return;
+      if (sectionTransitioning) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+
+      // 세로 휠을 가로 이동으로 사용하되, 트랙패드 가로 제스처도 보존합니다.
       const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY)
         ? event.deltaX
         : event.deltaY;
-
       if (Math.abs(delta) < 1) return;
 
-      const maxScroll = track.scrollWidth - track.clientWidth;
+      const maxScroll = getMaxScroll();
       if (maxScroll <= 1) return;
 
-      const canMoveLeft = track.scrollLeft > 1;
-      const canMoveRight = track.scrollLeft < maxScroll - 1;
+      const baseTarget = wheelFrame ? wheelTarget : track.scrollLeft;
+      const movingTowardEdge = wheelFrame && Math.abs(wheelTarget - track.scrollLeft) > 1;
+      const atRequestedEdge = delta < 0 ? baseTarget <= 1 : baseTarget >= maxScroll - 1;
 
-      // 가로 목록의 끝에서는 이벤트를 가로채지 않고 페이지 스크롤을 유지합니다.
-      if ((delta < 0 && !canMoveLeft) || (delta > 0 && !canMoveRight)) {
+      // 스크롤 애니메이션이 진행 중이면 같은 방향의 관성 입력으로 섹션이 갑자기 넘어가지 않게 합니다.
+      if (atRequestedEdge) {
+        if (movingTowardEdge) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
         return;
       }
 
       event.preventDefault();
       event.stopPropagation();
-      track.scrollLeft += delta;
+
+      // 일반 휠 한 번에도 지나치게 조금 움직이지 않도록 하고, 여러 입력은 목표점에 누적합니다.
+      wheelTarget = clampScroll(baseTarget + delta * 1.45);
+      if (!wheelFrame) wheelFrame = requestAnimationFrame(animateHorizontalScroll);
     }, { passive: false });
   }
 
   /*
-   * 페이지 섹션 이동 휠
-   * - 메인 화면에서 아래로 휠을 돌리면 게임 프로젝트로 이동합니다.
-   * - 게임 프로젝트 상단에서 위로 휠을 돌리면 메인 화면으로 돌아갑니다.
-   * - 가로 갤러리가 스크롤을 처리하는 도중에는 위 핸들러가 개입하지 않습니다.
+   * 페이지 바깥 영역의 휠은 섹션 단위로 부드럽게 이동합니다.
+   * 프로젝트 카드 레일은 위의 핸들러가 먼저 처리하므로 여기에 도달하지 않습니다.
    */
-  function enableHeroWheelNavigation() {
+  function enableSectionWheelNavigation() {
     const hero = document.querySelector('.hero');
-    const gamesSection = document.getElementById('games');
+    const projects = document.getElementById('games');
+    const studio = document.getElementById('studio');
     const header = document.querySelector('.site-header');
-    if (!hero || !gamesSection) return;
-    if (window.matchMedia('(max-width: 900px)').matches) return;
+    if (!hero || !projects || !studio) return;
 
-    let isAnimating = false;
-    let animationTimer = null;
+    // 터치 화면은 자연스러운 세로 스크롤을 유지하고, 마우스/트랙패드에서 섹션 이동을 적용합니다.
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
 
+    let unlockTimer = null;
+    let riseTimer = null;
+    let currentDestination = null;
+
+    const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const headerHeight = () => header ? header.getBoundingClientRect().height : 0;
-    const documentTop = (element) => element.getBoundingClientRect().top + window.scrollY;
+    const maxPageScroll = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    const sectionTop = (element) => Math.max(0, Math.min(maxPageScroll(), element.getBoundingClientRect().top + window.scrollY - headerHeight()));
+    const getStops = () => [
+      { element: hero, top: sectionTop(hero), name: 'hero' },
+      { element: projects, top: sectionTop(projects), name: 'projects' },
+      { element: studio, top: sectionTop(studio), name: 'studio' }
+    ].filter((stop, index, all) => index === 0 || Math.abs(stop.top - all[index - 1].top) > 2);
 
-    function scrollToSection(section) {
-      isAnimating = true;
-      window.clearTimeout(animationTimer);
-      const target = Math.max(0, documentTop(section) - headerHeight());
-      window.scrollTo({ top: target, behavior: 'smooth' });
+    function playProjectsRise() {
+      if (!projects || prefersReducedMotion()) return;
+      window.clearTimeout(riseTimer);
+      projects.classList.remove('is-rising');
+      // 같은 클래스를 다시 붙여도 CSS 애니메이션이 처음부터 재생되도록 프레임을 확정합니다.
+      void projects.offsetWidth;
+      projects.classList.add('is-rising');
+      riseTimer = window.setTimeout(() => projects.classList.remove('is-rising'), 1150);
+    }
 
-      // 트랙패드 휠 관성으로 여러 번 점프하는 것을 방지합니다.
-      animationTimer = window.setTimeout(() => {
-        isAnimating = false;
-      }, 1050);
+    function scrollToSection(stop) {
+      if (!stop || sectionTransitioning) return;
+      sectionTransitioning = true;
+      currentDestination = stop.name;
+      window.clearTimeout(unlockTimer);
+      window.clearTimeout(riseTimer);
+
+      const top = Math.max(0, Math.min(maxPageScroll(), stop.top));
+      window.scrollTo({ top, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+
+      // OUR PROJECTS가 화면에 들어올 무렵부터 내용이 아래에서 위로 올라옵니다.
+      if (stop.name === 'projects') {
+        window.setTimeout(playProjectsRise, prefersReducedMotion() ? 0 : 460);
+      }
+
+      unlockTimer = window.setTimeout(() => {
+        sectionTransitioning = false;
+        currentDestination = null;
+      }, prefersReducedMotion() ? 40 : 980);
     }
 
     window.addEventListener('wheel', (event) => {
-      if (event.ctrlKey || event.metaKey) return;
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-      if (Math.abs(event.deltaY) < Math.abs(event.deltaX) || Math.abs(event.deltaY) < 2) return;
+      if (event.ctrlKey || event.metaKey || prefersReducedMotion()) return;
+      // 트랙패드의 가로 제스처는 페이지 섹션 이동으로 해석하지 않습니다.
+      if (Math.abs(event.deltaX) > Math.abs(event.deltaY) || Math.abs(event.deltaY) < 5) return;
 
-      if (isAnimating) {
+      if (sectionTransitioning) {
         event.preventDefault();
         return;
       }
 
-      const headerH = headerHeight();
-      const heroRect = hero.getBoundingClientRect();
-      const gamesRect = gamesSection.getBoundingClientRect();
+      const stops = getStops();
+      if (stops.length < 2) return;
 
-      if (event.deltaY > 0) {
-        // 메인 화면이 보이는 동안 아래로 휠을 돌리면 프로젝트를 엽니다.
-        const heroIsVisible = heroRect.bottom > headerH + 40 && heroRect.top < window.innerHeight;
-        if (heroIsVisible) {
-          event.preventDefault();
-          scrollToSection(gamesSection);
+      let nearestIndex = 0;
+      let nearestDistance = Infinity;
+      stops.forEach((stop, index) => {
+        const distance = Math.abs(window.scrollY - stop.top);
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestIndex = index;
         }
-        return;
-      }
+      });
 
-      if (event.deltaY < 0) {
-        // 프로젝트 섹션 상단에서 위로 휠을 돌릴 때만 메인으로 돌아갑니다.
-        const projectsAtTop = Math.abs(gamesRect.top - headerH) < 110;
-        if (projectsAtTop) {
-          event.preventDefault();
-          scrollToSection(hero);
-        }
-      }
+      const nextIndex = event.deltaY > 0 ? nearestIndex + 1 : nearestIndex - 1;
+      if (nextIndex < 0 || nextIndex >= stops.length) return;
+
+      event.preventDefault();
+      scrollToSection(stops[nextIndex]);
     }, { passive: false });
+
+    // 메뉴와 CTA도 같은 섹션 이동 및 프로젝트 진입 애니메이션을 사용합니다.
+    document.querySelectorAll('a[href="#top"], a[href="#games"], a[href="#studio"]').forEach((link) => {
+      link.addEventListener('click', (event) => {
+        const hash = link.getAttribute('href');
+        const target = hash === '#top' ? hero : hash === '#games' ? projects : studio;
+        if (!target) return;
+        event.preventDefault();
+        const name = target === hero ? 'hero' : target === projects ? 'projects' : 'studio';
+        scrollToSection({ element: target, top: sectionTop(target), name });
+        if (window.history && window.history.replaceState) window.history.replaceState(null, '', hash);
+      });
+    });
   }
 
   enableProjectHorizontalWheel();
-  enableHeroWheelNavigation();
+  enableSectionWheelNavigation();
 })();
