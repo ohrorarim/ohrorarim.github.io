@@ -43,11 +43,11 @@ window.GAMES = [
     title: "타로",
     kicker: "TAROT · REFLECTION",
     description: "카드를 펼치고 오늘의 마음과 여러 선택을 천천히 들여다보는 시간.",
-    platform: "IN DEVELOPMENT",
-    status: "개발 중",
+    platform: "ANDROID",
+    status: "출시",
     image: "assets/images/Tarot.png",
-    storeUrl: "",
-    linkLabel: "출시 준비 중"
+    storeUrl: "https://play.google.com/store/apps/details?id=com.ohrorarim.Tarot",
+    linkLabel: "Google Play에서 보기"
   },
   
   {
